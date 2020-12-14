@@ -164,6 +164,7 @@ PIECES = {'S': S_SHAPE_TEMPLATE,
 
 def main():
     global FPSCLOCK, DISPLAYSURF, BASICFONT, BIGFONT
+    global board_history
     pygame.init()
     FPSCLOCK = pygame.time.Clock()
     DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
@@ -171,6 +172,10 @@ def main():
     BIGFONT = pygame.font.Font('freesansbold.ttf', 100)
     pygame.display.set_caption('Tetromino')
     num_pieces = 1000
+    board_history = []
+    game_history = {
+
+    }
 
     showTextScreen('Tetromino')
     while True: # game loop
@@ -180,11 +185,25 @@ def main():
         #    pygame.mixer.music.load('tetrisc.mid')
         #pygame.mixer.music.play(-1, 0.0)
         tetriminos = getTetriminos(num_pieces)
-        print(tetriminos)
+        #print(tetriminos)
         tetriminos = iter(tetriminos)
+        print(len(board_history))
         runGame(tetriminos)
         #pygame.mixer.music.stop()
+        '''
+        iter_boardHist = iter(board_history)
+        for board_ in board_history:
+            tim = time.time()
+            while(time.time() < tim + 1):
+                #print("fuck")
+                drawBoard(board_)
+                pygame.display.update()
+                FPSCLOCK.tick(FPS)
+                print("fuck")
+        '''
+        board_history = []
         showTextScreen('Game Over')
+
 
 
 def runGame(tetriminos):
@@ -211,8 +230,10 @@ def runGame(tetriminos):
     phantomPiece = getPhantomPiece(board, fallingPiece)
     holdPiece = None
     storedThisRound = False
+    board_history.append(board)
 
     while True: # game loop
+        print(len(board_history))
         if fallingPiece == None:
             # No falling piece in play, so start a new piece at the top
             fallingPiece = nextPiece
@@ -348,6 +369,7 @@ def runGame(tetriminos):
             if not isValidPosition(board, fallingPiece, adjY=1):
                 # falling piece has landed, set it on the board
                 addToBoard(board, fallingPiece)
+                board_history.append(board)
                 score += removeCompleteLines(board)
                 level, fallFreq = calculateLevelAndFallFreq(score)
                 fallingPiece = None
