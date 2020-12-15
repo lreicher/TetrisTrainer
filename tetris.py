@@ -586,7 +586,8 @@ def runGame(tetriminos):
                 return # can't fit a new piece on the board, so game over
 
         checkForQuit()
-
+        if checkOverhangAll(board):
+            print("overhang!")
         for event in pygame.event.get(): # event handling loop
             if event.type == KEYUP:
                 if (event.key == K_p):
@@ -923,6 +924,26 @@ def isCompleteLine(board, y):
         if board[x][y] == BLANK:
             return False
     return True
+
+def checkOverhang(board, x):
+    # Return True if the column has a gap with tetriminos above and below it.
+    blank = False
+    block = False
+    for y in range(BOARDHEIGHT):        
+        if board[x][y] == BLANK:
+            blank = True
+            block = False
+        else:
+            block = True
+        if blank and block:
+            return True
+    return False
+
+def checkOverhangAll(board):
+    for x in range(BOARDWIDTH):
+        if checkOverhang(board,x):
+            return True
+    return False
 
 
 def removeCompleteLines(board):
