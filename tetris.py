@@ -261,6 +261,11 @@ def runGame():
             printed = False
 
             for placement in placements:
+                overhangCount = countOverhangAll(board)
+                tempBoard = board
+                addToBoard(tempBoard, placement)
+                tempCount = countOverhangAll(tempBoard)
+                overhangsAdded = tempCount - overhangCount
                 lines_cleared = pathfinding.will_clear_line(placement, board)
                 if  lines_cleared > 0:
                     print(lines_cleared)
@@ -727,9 +732,9 @@ def checkOverhang(board, x):
     for y in range(BOARDHEIGHT):
         if board[x][y] == BLANK:
             blank = True
-            block = False
         else:
             block = True
+            blank = False
         if blank and block:
             return True
     return False
@@ -739,6 +744,13 @@ def checkOverhangAll(board):
         if checkOverhang(board,x):
             return True
     return False
+
+def countOverhangAll(board):
+    int count = 0
+    for x in range(BOARDWIDTH):
+        if checkOverhang(board,x):
+            ++count
+    return count
 
 def removeCompleteLines(board):
     # Remove any completed lines on the board, move everything above them down, and return the number of complete lines.
