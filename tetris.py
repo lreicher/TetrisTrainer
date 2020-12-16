@@ -746,7 +746,7 @@ def checkOverhangAll(board):
     return False
 
 def countOverhangAll(board):
-    int count = 0
+    count = 0
     for x in range(BOARDWIDTH):
         if checkOverhang(board,x):
             ++count
