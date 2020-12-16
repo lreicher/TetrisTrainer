@@ -10,6 +10,7 @@ from pygame.locals import *
 import copy
 import goap
 import metrics
+import numpy as np
 #import goap
 
 FPS = 25
@@ -221,6 +222,12 @@ def runGame():
     holdPiece = None
     storedThisRound = False
 
+    features = []
+    labels = []
+    played_move = []
+    metrics_list = []
+    need_to_update = False
+
     board_history.append(copy.deepcopy(board))
     fallingPiece_history.append(copy.deepcopy(fallingPiece))
 
@@ -228,6 +235,8 @@ def runGame():
     #print(placements)
 
     while True: # game loop
+        print(features)
+        print(labels)
         if fallingPiece == None:
             # No falling piece in play, so start a new piece at the top
             fallingPiece = nextPiece
@@ -243,8 +252,11 @@ def runGame():
 
             placements = get_placements(fallingPiece, board)
 
+            need_to_update = True
             for placement in placements:
-                print(metrics.get_metrics(board, placement))
+                metrics_list.append(metrics.get_metrics(board, placement))
+            played_move = np.full(len(metrics_list), 0)
+
             while checkForKeyPress() == None:
                 pygame.display.update()
                 FPSCLOCK.tick()
@@ -379,6 +391,11 @@ def runGame():
             if not isValidPosition(board, fallingPiece, adjY=1):
                 # falling piece has landed, set it on the board
                 addToBoard(board, fallingPiece)
+                if need_to_update:
+                    played_move[placements.index(fallingPiece)] = 1
+                    features.extend(metrics_list)
+                    labels.extend(played_move)
+                    need_to_update = False
                 score += removeCompleteLines(board)
                 level, fallFreq = calculateLevelAndFallFreq(score)
                 fallingPiece = None
