@@ -9,7 +9,7 @@ import random, time, pygame, sys
 from pygame.locals import *
 import copy
 import goap
-import metrics
+import pathfinding
 #import goap
 
 FPS = 25
@@ -166,6 +166,7 @@ PIECES = {'S': S_SHAPE_TEMPLATE,
 
 def main():
     global FPSCLOCK, DISPLAYSURF, BASICFONT, BIGFONT
+    global board_history
     pygame.init()
     FPSCLOCK = pygame.time.Clock()
     DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
@@ -203,7 +204,7 @@ def runGame():
 
     board_history = []
     fallingPiece_history = []
-
+    index = 0
     # setup variables for the start of the game
     board = getBlankBoard()
     lastMoveDownTime = time.time()
@@ -220,10 +221,9 @@ def runGame():
     phantomPiece = getPhantomPiece(board, fallingPiece)
     holdPiece = None
     storedThisRound = False
-
-    board_history.append(copy.deepcopy(board))
-    fallingPiece_history.append(copy.deepcopy(fallingPiece))
-
+    board_history.append(board)
+    fallingPiece_history.append(fallingPiece)
+    index += 1
     placements = get_placements(fallingPiece, board)
     #print(placements)
 
@@ -231,10 +231,9 @@ def runGame():
         if fallingPiece == None:
             # No falling piece in play, so start a new piece at the top
             fallingPiece = nextPiece
-
             board_history.append(copy.deepcopy(board))
             fallingPiece_history.append(copy.deepcopy(fallingPiece))
-
+            index += 1
             phantomPiece = getPhantomPiece(board, fallingPiece)
             storedThisRound = False
 
@@ -243,16 +242,48 @@ def runGame():
 
             placements = get_placements(fallingPiece, board)
 
+            print("PLACEMENTS")
+            print(placements)
+
+            #for placement in placements:
+            #    drawPiece(placement, phantomPiece = True)
+            #print(board)
+            #least_height_added = pathfinding.get_shortestHeight(placements, board)
+            #print(pathfinding.heightAdded(least_height_added, board))
+            #drawPiece(least_height_added,phantomPiece=True)
+
             # LIST OF ENCLOSED SPACES
-            enclosed_spaces = metrics.getEnclosedSpaces(board)
+            enclosed_spaces = pathfinding.getEnclosedSpaces(board)
             # STRIPED PLACEMENTS (ENCLOSED)
-            placements = metrics.strip_enclosed(enclosed_spaces, placements)
+            placements = pathfinding.strip_enclosed(enclosed_spaces, placements)
 
             # PRINT THE MOVE THAT CLEARS THE MOST LINES
             printed = False
 
             for placement in placements:
-                print(metrics.get_metrics(board, placement))
+                overhangCount = countOverhangAll(board)
+                tempBoard = copy.deepcopy(board)
+                addToBoard(tempBoard, placement)
+                tempCount = countOverhangAll(tempBoard)
+                overhangsAdded = tempCount - overhangCount
+                if overhangsAdded > 0:
+                    print("This placement will add " +str(overhangsAdded) + " new overhangs.")
+                lines_cleared = pathfinding.will_clear_line(placement, board)
+                if  lines_cleared > 0:
+                    print(lines_cleared)
+                    print("PIECE WILL CLEAR A LINE")
+                    drawPiece(placement, phantomPiece = True)
+                    printed = True
+            if not printed:
+                possible = []
+                for placement in placements:
+                    if not pathfinding.creates_enclosedSpaces(placement, board):
+                        possible.append(placement)
+                print("PIECE WONT CREATE ENCLOSED SPACES")
+                print("PIECE ALSO CREATES THE LEAST HEIGHT")
+                least_height_added = pathfinding.get_shortestHeight(possible, board)
+                drawPiece(least_height_added, phantomPiece = True)
+
             while checkForKeyPress() == None:
                 pygame.display.update()
                 FPSCLOCK.tick()
@@ -261,6 +292,11 @@ def runGame():
                 return # can't fit a new piece on the board, so game over
 
         checkForQuit()
+        print(pathfinding.pieceToBoard(fallingPiece))
+
+        #print(goap.get_movement_actions())
+        #if checkOverhangAll(board):
+        #    print("overhang!")
 
         for event in pygame.event.get(): # event handling loop
             if event.type == KEYUP:
@@ -276,7 +312,7 @@ def runGame():
                 elif (event.key == K_i):
                     #print(board_history)
                     #print(fallingPiece_history)
-                    board, fallingPiece, board_history, fallingPiece_history = showInfoScreen(copy.deepcopy(board_history), copy.deepcopy(fallingPiece_history), copy.deepcopy(board), copy.deepcopy(fallingPiece), board_history.index(board))
+                    board, fallingPiece, board_history, fallingPiece_history, index = showInfoScreen(board_history, fallingPiece_history, board, fallingPiece, index-1)
                     phantomPiece = getPhantomPiece(board, fallingPiece)
                     lastFalltime = time.time()
                     lastMoveDownTime = time.time()
@@ -299,10 +335,8 @@ def runGame():
                         fallingPiece = nextPiece
                         nextPiece = getNewPiece()
                     phantomPiece = getPhantomPiece(board, fallingPiece)
-
                     board_history.append(copy.deepcopy(board))
                     fallingPiece_history.append(copy.deepcopy(fallingPiece))
-
                     index += 1
                     storedThisRound = True
 
@@ -457,100 +491,98 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
     # The mentor should still be present at every move
     # ADD a button "verbose" or something that provides an explanation of the mentors move
     # reommendation.
-    _index = index
+    index = index
     max_index = index
     board = curr_board
     fallingPiece = fallingPiece
     board_history = board_history
     fallingPiece_history = tetrimino_order
-
     placements = None
     placement_index = 0
     curr_placement = None
     placement_mode = False
-
+    print("SHOULD BE EQUAL")
+    print(len(board_history))
+    print(len(fallingPiece_history))
+    print("----------------")
     while True:
         for event in pygame.event.get():
             if event.type == KEYDOWN:
-                if event.key == K_a and _index - 1 >= 0:
-
+                if event.key == K_a and index - 1 > 0:
+                    print(index)
                     placement_mode = False
                     placements = None
                     placement_index = 0
                     curr_placement = None
-
-                    _index -= 1
-                    board = board_history[_index]
-                    fallingPiece = fallingPiece_history[_index]
-
+                    board = board_history[index - 1]
+                    fallingPiece = fallingPiece_history[index - 1]
+                    index -= 1
+                    print(index)
                     DISPLAYSURF.fill(BGCOLOR)
                     drawBoard(board)
                     drawPiece(fallingPiece)
                     pygame.display.update()
                     FPSCLOCK.tick(FPS)
-
-                elif event.key == K_d and _index + 1 <= max_index:
-
+                elif event.key == K_d and index + 1 <= max_index:
+                    print(index)
                     placement_mode = False
                     placements = None
                     placement_index = 0
                     curr_placement = None
-
-                    _index += 1
-                    board = board_history[_index]
-                    fallingPiece = fallingPiece_history[_index]
-
+                    board = board_history[index + 1]
+                    fallingPiece = fallingPiece_history[index + 1]
+                    index += 1
+                    print(index)
                     DISPLAYSURF.fill(BGCOLOR)
                     drawBoard(board)
                     drawPiece(fallingPiece)
                     pygame.display.update()
                     FPSCLOCK.tick(FPS)
-
                 elif event.key == K_x:
                     if not placements:
-
                         placement_mode = True
                         placements = get_placements(fallingPiece, board)
+                        print(placements)
                         placement_index = 0
+                        print(placement_index)
                         curr_placement = placements[placement_index]
-
                         DISPLAYSURF.fill(BGCOLOR)
                         drawPiece(curr_placement, phantomPiece = True)
                         drawBoard(board)
                         drawPiece(fallingPiece)
                         pygame.display.update()
                         FPSCLOCK.tick()
-
                 elif event.key == K_LEFT:
-                    if placements and (placement_index - 1 >= 0) and placement_mode:
-
+                    if placements and placement_index > 0 and placement_mode:
                         placement_index -= 1
+                        print(placements)
                         curr_placement = placements[placement_index]
-
+                        print(curr_placement)
                         DISPLAYSURF.fill(BGCOLOR)
                         drawPiece(curr_placement, phantomPiece = True)
                         drawBoard(board)
                         drawPiece(fallingPiece)
                         pygame.display.update()
                         FPSCLOCK.tick()
-
                 elif event.key == K_RIGHT:
-                    if placements and (placement_index + 1 < len(placements)) and placement_mode:
-
+                    if placements and placement_index < len(placements) - 1 and placement_mode:
                         placement_index += 1
+                        print(placements)
                         curr_placement = placements[placement_index]
-
+                        print(curr_placement)
                         DISPLAYSURF.fill(BGCOLOR)
                         drawPiece(curr_placement, phantomPiece = True)
                         drawBoard(board)
                         drawPiece(fallingPiece)
                         pygame.display.update()
                         FPSCLOCK.tick()
-
             elif event.type == KEYUP:
                 if event.key == K_i:
-                    return (copy.deepcopy(board), copy.deepcopy(fallingPiece), copy.deepcopy(board_history[0:_index+1]), copy.deepcopy(fallingPiece_history[0:_index+1]))
-
+                    board_history = board_history[0:index+1]
+                    fallingPiece_history = fallingPiece_history[0:index+1]
+                    print(len(board_history))
+                    print(len(fallingPiece_history))
+                    return (board, fallingPiece, board_history, fallingPiece_history, index)
             print("Updating")
             DISPLAYSURF.fill(BGCOLOR)
             drawBoard(board)
@@ -702,18 +734,38 @@ def checkOverhang(board, x):
     for y in range(BOARDHEIGHT):
         if board[x][y] == BLANK:
             blank = True
-            block = False
         else:
             block = True
+            blank = False
         if blank and block:
             return True
     return False
+
+def countOverhang(board, x):
+    blank = False
+    block = False
+    count = 0
+    for y in range(BOARDHEIGHT):
+        if board[x][y] == BLANK:
+            blank = True
+        else:
+            block = True
+            blank = False
+        if blank and block:
+            count += 1
+    return count
 
 def checkOverhangAll(board):
     for x in range(BOARDWIDTH):
         if checkOverhang(board,x):
             return True
     return False
+
+def countOverhangAll(board):
+    count = 0
+    for x in range(BOARDWIDTH):
+        count += countOverhang(board,x)
+    return count
 
 def removeCompleteLines(board):
     # Remove any completed lines on the board, move everything above them down, and return the number of complete lines.
