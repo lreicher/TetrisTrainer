@@ -35,14 +35,18 @@ shapeToDraw = PIECES[piece['shape']][piece['rotation']]
                 if phantomPiece: drawPhantomPiece(piece['color'], pixelx + (x* BOXSIZE), pixely + (y*BOXSIZE))
                 else: drawBox(None, None, piece['color'], pixelx + (x * BOXSIZE), pixely + (y * BOXSIZE))
 '''
-def will_clear_line(placement, board):
-    tempBoard = copy.deepcopy(board)
-    tetris.addToBoard(tempBoard, placement)
-    comp_lines = 0
-    for y in range(tetris.BOARDHEIGHT):
-        if tetris.isCompleteLine(tempBoard, y):
-            comp_lines += 1
-    return comp_lines
+def get_metrics(board, placement):
+    metrics = {}
+    metrics["num_lines_cleared"] = num_lines_cleared(placement, board)
+    metrics["change_num_enclosedSpaces"] = change_num_enclosedSpaces(placement, board)
+    metrics["height_added"] = heightAdded(placement, board)
+    metrics["change_num_overhangs"] = change_num_overhangs(placement, board)
+    metrics["in_enclosure"] = is_in_enclosure(placement, board)
+    return metrics
+
+def is_in_enclosure(placement, board):
+    enclosure_list = getEnclosedSpaces(board)
+    return is_enclosed(enclosure_list, placement)
 
 def pieceToBoard(piece):
     blocks = []
@@ -53,12 +57,50 @@ def pieceToBoard(piece):
                 blocks.append((piece['x'] + x, piece['y'] + y))
     return blocks
 
-def creates_enclosedSpaces(placement, board):
+def num_lines_cleared(placement, board):
     tempBoard = copy.deepcopy(board)
     tetris.addToBoard(tempBoard, placement)
-    if len(getEnclosedSpaces(board)) < len(getEnclosedSpaces(tempBoard)):
-        return True
-    else: return False
+    comp_lines = 0
+    for y in range(tetris.BOARDHEIGHT):
+        if tetris.isCompleteLine(tempBoard, y):
+            comp_lines += 1
+    return comp_lines
+
+# Returns a signed int representing the number of additional enclosed spaces
+def change_num_enclosedSpaces(placement, board):
+    tempBoard = copy.deepcopy(board)
+    tetris.addToBoard(tempBoard, placement)
+    return len(getEnclosedSpaces(tempBoard)) - len(getEnclosedSpaces(board))
+
+def heightAdded(piece, board):
+    blocks = pieceToBoard(piece)
+    lowest_y = 19
+    for x in range(0,10):
+        for y in range(2,20):
+            if board[x][y] != tetris.BLANK and y < lowest_y:
+                lowest_y = y
+
+    height_added = -1000
+    for block in blocks:
+        diff = lowest_y - block[1]
+        if diff > height_added:
+            height_added = diff
+    return height_added
+
+def change_num_overhangs(placement, board):
+    tempBoard = copy.deepcopy(board)
+    tetris.addToBoard(tempBoard, placement)
+    return getNumOverhangs(tempBoard) - getNumOverhangs(board)
+
+def getNumOverhangs(board):
+    num_overhangs = 0
+    for x in range(0,10):
+        for y in range(2,20):
+            if board[x][y] != tetris.BLANK:
+                if y + 1 <= 19:
+                    if board[x][y+1] == tetris.BLANK:
+                        num_overhangs += 1
+    return num_overhangs
 
 def getEnclosedSpaces(board):
     enclosed_boxes = []
@@ -110,23 +152,8 @@ def is_enclosed(enclosure_list, piece):
     blocks = pieceToBoard(piece)
     for block in blocks:
         if block in enclosure_list:
-            return True
-    return False
-
-def heightAdded(piece, board):
-    blocks = pieceToBoard(piece)
-    lowest_y = 19
-    for x in range(0,10):
-        for y in range(2,20):
-            if board[x][y] != tetris.BLANK and y < lowest_y:
-                lowest_y = y
-
-    height_added = -1000
-    for block in blocks:
-        diff = lowest_y - block[1]
-        if diff > height_added:
-            height_added = diff
-    return height_added
+            return 1
+    return 0
 
 def get_shortestHeight(placements, board):
     minimum_height_index = None
