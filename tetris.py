@@ -243,9 +243,6 @@ def runGame():
 
             placements = get_placements(fallingPiece, board)
 
-            #print("PLACEMENTS")
-            #print(placements)
-
             # LIST OF ENCLOSED SPACES
             enclosed_spaces = metrics.getEnclosedSpaces(board)
             # STRIPED PLACEMENTS (ENCLOSED)
@@ -264,13 +261,6 @@ def runGame():
                 return # can't fit a new piece on the board, so game over
 
         checkForQuit()
-        print("NUM OVERHANGS")
-        print(metrics.getNumOverhangs(board))
-        #print(metrics.pieceToBoard(fallingPiece))
-
-        #print(goap.get_movement_actions())
-        #if checkOverhangAll(board):
-        #    print("overhang!")
 
         for event in pygame.event.get(): # event handling loop
             if event.type == KEYUP:
