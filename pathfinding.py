@@ -56,16 +56,16 @@ def get_enclosures(board):
 
 def heightAdded(piece, board):
     blocks = pieceToBoard(piece)
-    highest_board = 0
-    for y in range(2,20):
-        for x in range(0,10):
-            if board[x][y] != tetris.BLANK and board[x][y] > highest_board:
-                highest_board = board[x][y]
+    lowest_y = 19
+    for x in range(0,10):
+        for y in range(2,20):
+            if board[x][y] != tetris.BLANK and y < lowest_y:
+                lowest_y = y
 
-    height_added = 0
+    height_added = -1000
     for block in blocks:
-        diff = block[1] - highest_board
-        if block[1] > highest_board and diff > height_added:
+        diff = lowest_y - block[1]
+        if diff > height_added:
             height_added = diff
     return height_added
 
@@ -77,7 +77,7 @@ def get_shortestHeight(placements, board):
         if height_added < minimum_height:
             minimum_height = height_added
             minimum_height_index = i
-    return placements[i]
+    return placements[minimum_height_index]
 
 
 

@@ -260,8 +260,10 @@ def runGame(tetriminos):
 
             #for placement in placements:
             #    drawPiece(placement, phantomPiece = True)
-
-            drawPiece(pathfinding.get_shortestHeight(placements, board), phantomPiece=True)
+            print(board)
+            least_height_added = pathfinding.get_shortestHeight(placements, board)
+            print(pathfinding.heightAdded(least_height_added, board))
+            drawPiece(least_height_added,phantomPiece=True)
 
             while checkForKeyPress() == None:
                 pygame.display.update()
