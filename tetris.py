@@ -173,11 +173,6 @@ def main():
     BASICFONT = pygame.font.Font('freesansbold.ttf', 18)
     BIGFONT = pygame.font.Font('freesansbold.ttf', 100)
     pygame.display.set_caption('Tetromino')
-    num_pieces = 1000
-    board_history = []
-    game_history = {
-
-    }
 
     #_world = goapy.Planner('right_of_goal', 'left_of_goal', 'above_goal', 'cw_of_goal', 'ccw_of_goal')
     #we may need to know where we want the piece to go by this point.
@@ -193,29 +188,14 @@ def main():
         #else:
         #    pygame.mixer.music.load('tetrisc.mid')
         #pygame.mixer.music.play(-1, 0.0)
-        tetriminos = getTetriminos(num_pieces)
-        #print(tetriminos)
-        tetriminos = iter(tetriminos)
-        #print(len(board_history))
-        runGame(tetriminos)
-        #pygame.mixer.music.stop()
-        '''
-        iter_boardHist = iter(board_history)
-        for board_ in board_history:
-            tim = time.time()
-            while(time.time() < tim + 1):
-                #print("fuck")
-                drawBoard(board_)
-                pygame.display.update()
-                FPSCLOCK.tick(FPS)
-                print("fuck")
-        '''
 
+        runGame()
+        #pygame.mixer.music.stop()
         showTextScreen('Game Over')
 
 
 
-def runGame(tetriminos):
+def runGame():
 
     # initialize the random seed
     # this allows us to replay the game with the same tetrimino order
@@ -236,12 +216,11 @@ def runGame(tetriminos):
     score = 0
     level, fallFreq = calculateLevelAndFallFreq(score)
 
-    fallingPiece = next(tetriminos)
-    nextPiece = next(tetriminos)
+    fallingPiece = getNewPiece()
+    nextPiece = getNewPiece()
     phantomPiece = getPhantomPiece(board, fallingPiece)
     holdPiece = None
     storedThisRound = False
-    storedFirstTime = False
     board_history.append(board)
     fallingPiece_history.append(fallingPiece)
     index += 1
@@ -257,9 +236,8 @@ def runGame(tetriminos):
             index += 1
             phantomPiece = getPhantomPiece(board, fallingPiece)
             storedThisRound = False
-            storedFirstTime = False
 
-            nextPiece = next(tetriminos)
+            nextPiece = getNewPiece()
             lastFallTime = time.time() # reset lastFallTime
 
             placements = get_placements(fallingPiece, board)
@@ -327,7 +305,8 @@ def runGame(tetriminos):
                 elif (event.key == K_i):
                     #print(board_history)
                     #print(fallingPiece_history)
-                    board, fallingPiece = showInfoScreen(board_history, fallingPiece_history, board, fallingPiece, index)
+                    board, fallingPiece, new_index = showInfoScreen(board_history, fallingPiece_history, board, fallingPiece, index)
+                    board_history = board_history[0:new_index+1]
                     phantomPiece = getPhantomPiece(board, fallingPiece)
                     lastFalltime = time.time()
                     lastMoveDownTime = time.time()
@@ -341,26 +320,19 @@ def runGame(tetriminos):
 
             elif event.type == KEYDOWN:
                 if (event.key == K_c) and not storedThisRound:
-
-                    if holdPiece:
-                        tempPiece = holdPiece
-                        holdPiece = fallingPiece
-                        holdPiece['y'] = -1
-                        holdPiece['x'] = int(BOARDWIDTH / 2) - int(TEMPLATEWIDTH / 2)
-                        fallingPiece = tempPiece
-                        phantomPiece = getPhantomPiece(board, fallingPiece)
-                        board_history.append(copy.deepcopy(board))
-                        fallingPiece_history.append(copy.deepcopy(fallingPiece))
-                        index += 1
-                        storedThisRound = True
+                    tempPiece = holdPiece
+                    holdPiece = fallingPiece
+                    holdPiece['y'] = -1
+                    holdPiece['x'] = int(BOARDWIDTH / 2) - int(TEMPLATEWIDTH / 2)
+                    if tempPiece: fallingPiece = tempPiece
                     else:
-                        holdPiece = fallingPiece
-                        holdPiece['y'] = -1
-                        holdPiece['x'] = int(BOARDWIDTH / 2) - int(TEMPLATEWIDTH / 2)
-                        phantomPiece = None
-                        storedThisRound = True
-                        storedFirstTime = True
-                        break
+                        fallingPiece = nextPiece
+                        nextPiece = getNewPiece()
+                    phantomPiece = getPhantomPiece(board, fallingPiece)
+                    board_history.append(copy.deepcopy(board))
+                    fallingPiece_history.append(copy.deepcopy(fallingPiece))
+                    index += 1
+                    storedThisRound = True
 
                 # moving the piece sideways
                 elif (event.key == K_LEFT or event.key == K_a) and isValidPosition(board, fallingPiece, adjX=-1):
@@ -419,8 +391,7 @@ def runGame(tetriminos):
                         if not isValidPosition(board, fallingPiece, adjY=i):
                             break
                     fallingPiece['y'] += i - 1
-        if storedFirstTime:
-            continue
+
         # handle moving the piece because of user input
         if (movingLeft or movingRight) and time.time() - lastMoveSidewaysTime > MOVESIDEWAYSFREQ:
             if movingLeft and isValidPosition(board, fallingPiece, adjX=-1):
@@ -547,7 +518,7 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
                     FPSCLOCK.tick(FPS)
             elif event.type == KEYUP:
                 if event.key == K_i:
-                    return (board, fallingPiece)
+                    return (board, fallingPiece, index)
             else:
                 print("Updating")
                 DISPLAYSURF.fill(BGCOLOR)
@@ -613,12 +584,6 @@ def calculateLevelAndFallFreq(score):
     level = int(score / 10) + 1
     fallFreq = 0.27 - (level * 0.02)
     return level, fallFreq
-
-def getTetriminos(num_pieces):
-    tetriminos = []
-    for i in range(num_pieces):
-        tetriminos.append(getNewPiece())
-    return tetriminos
 
 def getPiece(shape, rotation, x, y):
 
