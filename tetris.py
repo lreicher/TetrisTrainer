@@ -262,10 +262,10 @@ def runGame():
 
             for placement in placements:
                 overhangCount = countOverhangAll(board)
-                tempBoard = board
-                addToBoard(tempBoard, placement)
-                tempCount = countOverhangAll(tempBoard)
-                overhangsAdded = tempCount - overhangCount
+                #tempBoard = board
+                #addToBoard(tempBoard, placement)
+                #tempCount = countOverhangAll(tempBoard)
+                #overhangsAdded = tempCount - overhangCount
                 lines_cleared = pathfinding.will_clear_line(placement, board)
                 if  lines_cleared > 0:
                     print(lines_cleared)
