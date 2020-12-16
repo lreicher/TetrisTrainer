@@ -9,6 +9,7 @@ import random, time, pygame, sys
 from pygame.locals import *
 import copy
 import goap
+import pathfinding
 #import goap
 
 FPS = 25
@@ -256,8 +257,12 @@ def runGame(tetriminos):
 
             print("PLACEMENTS")
             print(placements)
-            for placement in placements:
-                drawPiece(placement, phantomPiece = True)
+
+            #for placement in placements:
+            #    drawPiece(placement, phantomPiece = True)
+
+            drawPiece(pathfinding.get_shortestHeight(placements, board), phantomPiece=True)
+
             while checkForKeyPress() == None:
                 pygame.display.update()
                 FPSCLOCK.tick()
@@ -266,6 +271,7 @@ def runGame(tetriminos):
                 return # can't fit a new piece on the board, so game over
 
         checkForQuit()
+        print(pathfinding.pieceToBoard(fallingPiece))
 
         #print(goap.get_movement_actions())
         #if checkOverhangAll(board):

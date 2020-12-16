@@ -37,7 +37,7 @@ def can_rotate(piece,board,rotLeft=False):
 	tempPiece['rotation'] = rotation
 
 class MoveLeft(Action):
-	effects = {"movedLeft": True, "movedDown": False, "x": world_state['x'] - 1}
+	effects = {"movedLeft": True, "movedDown": False,}
 	preconditions = {"canMoveLeft": True, "movedDown": True, "movedLeft": False}
 
 	def on_enter(self, world_state, goal_state):
