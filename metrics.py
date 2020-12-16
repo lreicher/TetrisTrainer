@@ -1,40 +1,16 @@
 import tetris
 import heapq
 import copy
-# x {-2, 7}
-# y {-1 18}
+
+def score_placements(placements, board):
+    score = {}
+    for placement in placements:
+        score[placement] = heuristic_eval(placement, board)
+
+def heuristic_eval(placement, board):
+    placement_metrics = get_metrics(placement, board)
 
 
-
-# Falling Piece x,y,r,s
-# Placement Piece x,y,r,s
-
-# All neighbor moves
-    # For each rotation of falling Piece
-    #   For move_left and move_right
-    #   For drop
-
-# Has dropped
-# Has moved horizontally
-
-# board
-
-# . is blank
-# BLANK
-
-'''
-shapeToDraw = PIECES[piece['shape']][piece['rotation']]
-    if pixelx == None and pixely == None:
-        # if pixelx & pixely hasn't been specified, use the location stored in the piece data structure
-        pixelx, pixely = convertToPixelCoords(piece['x'], piece['y'])
-
-    # draw each of the boxes that make up the piece
-    for x in range(TEMPLATEWIDTH):
-        for y in range(TEMPLATEHEIGHT):
-            if shapeToDraw[y][x] != BLANK:
-                if phantomPiece: drawPhantomPiece(piece['color'], pixelx + (x* BOXSIZE), pixely + (y*BOXSIZE))
-                else: drawBox(None, None, piece['color'], pixelx + (x * BOXSIZE), pixely + (y * BOXSIZE))
-'''
 def get_metrics(board, placement):
     metrics = {}
     metrics["num_lines_cleared"] = num_lines_cleared(placement, board)
@@ -43,6 +19,7 @@ def get_metrics(board, placement):
     metrics["change_num_overhangs"] = change_num_overhangs(placement, board)
     metrics["in_enclosure"] = is_in_enclosure(placement, board)
     metrics["is_stuck"] = is_stuck(placement, board)
+    metrics["unique_gaps"] = get_change_roughness(placement, board)
     return metrics
 
 def is_stuck(placement, board):
@@ -175,6 +152,11 @@ def get_shortestHeight(placements, board):
             minimum_height = height_added
             minimum_height_index = i
     return placements[minimum_height_index]
+
+def get_change_roughness(placement, board):
+    tempBoard = copy.deepcopy(board)
+    tetris.addToBoard(tempBoard, placement)
+    return get_roughness(tempBoard) - get_roughness(board)
 
 def get_roughness(board):
     uniqueGapWidths = []

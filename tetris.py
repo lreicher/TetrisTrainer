@@ -245,7 +245,6 @@ def runGame():
 
             for placement in placements:
                 print(metrics.get_metrics(board, placement))
-                print("Unique gap widths for board: " +str(metrics.get_roughness(board)))
             while checkForKeyPress() == None:
                 pygame.display.update()
                 FPSCLOCK.tick()
