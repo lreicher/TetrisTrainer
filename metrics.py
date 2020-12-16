@@ -42,7 +42,18 @@ def get_metrics(board, placement):
     metrics["height_added"] = heightAdded(placement, board)
     metrics["change_num_overhangs"] = change_num_overhangs(placement, board)
     metrics["in_enclosure"] = is_in_enclosure(placement, board)
+    metrics["can_move"] = can_move(placement, board)
     return metrics
+
+def can_move(placement, board):
+    startingRot = placement['rotation']
+    tempPiece = copy.deepcopy(placement)
+    if tetris.isValidPosition(board, tempPiece, adjX=1) or tetris.isValidPosition(board, tempPiece, adjX=-1) \
+    or tetris.isValidPosition(board, tempPiece, adjY=-1): return True
+    for a in range(len(tetris.PIECES[tempPiece['shape']])):
+        tempPiece['rotation'] = (tempPiece['rotation'] - 1) % len(tetris.PIECES[tempPiece['shape']])
+        if tetris.isValidPosition(board, tempPiece) and tempPiece['rotation'] != startingRot: return True
+    return False
 
 def is_in_enclosure(placement, board):
     enclosure_list = getEnclosedSpaces(board)
