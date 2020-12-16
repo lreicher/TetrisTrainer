@@ -210,7 +210,7 @@ def main():
                 FPSCLOCK.tick(FPS)
                 print("fuck")
         '''
-        board_history = []
+
         showTextScreen('Game Over')
 
 
@@ -222,7 +222,9 @@ def runGame(tetriminos):
     seed = random.random()
     random.seed(seed)
 
-
+    board_history = []
+    fallingPiece_history = []
+    index = 0
     # setup variables for the start of the game
     board = getBlankBoard()
     lastMoveDownTime = time.time()
@@ -239,7 +241,10 @@ def runGame(tetriminos):
     phantomPiece = getPhantomPiece(board, fallingPiece)
     holdPiece = None
     storedThisRound = False
+    storedFirstTime = False
     board_history.append(board)
+    fallingPiece_history.append(fallingPiece)
+    index += 1
     placements = get_placements(fallingPiece, board)
     #print(placements)
 
@@ -247,8 +252,12 @@ def runGame(tetriminos):
         if fallingPiece == None:
             # No falling piece in play, so start a new piece at the top
             fallingPiece = nextPiece
+            board_history.append(copy.deepcopy(board))
+            fallingPiece_history.append(copy.deepcopy(fallingPiece))
+            index += 1
             phantomPiece = getPhantomPiece(board, fallingPiece)
             storedThisRound = False
+            storedFirstTime = False
 
             nextPiece = next(tetriminos)
             lastFallTime = time.time() # reset lastFallTime
@@ -260,10 +269,35 @@ def runGame(tetriminos):
 
             #for placement in placements:
             #    drawPiece(placement, phantomPiece = True)
-            print(board)
-            least_height_added = pathfinding.get_shortestHeight(placements, board)
-            print(pathfinding.heightAdded(least_height_added, board))
-            drawPiece(least_height_added,phantomPiece=True)
+            #print(board)
+            #least_height_added = pathfinding.get_shortestHeight(placements, board)
+            #print(pathfinding.heightAdded(least_height_added, board))
+            #drawPiece(least_height_added,phantomPiece=True)
+
+            # LIST OF ENCLOSED SPACES
+            enclosed_spaces = pathfinding.getEnclosedSpaces(board)
+            # STRIPED PLACEMENTS (ENCLOSED)
+            placements = pathfinding.strip_enclosed(enclosed_spaces, placements)
+
+            # PRINT THE MOVE THAT CLEARS THE MOST LINES
+            printed = False
+
+            for placement in placements:
+                lines_cleared = pathfinding.will_clear_line(placement, board)
+                if  lines_cleared > 0:
+                    print(lines_cleared)
+                    print("PIECE WILL CLEAR A LINE")
+                    drawPiece(placement, phantomPiece = True)
+                    printed = True
+            if not printed:
+                possible = []
+                for placement in placements:
+                    if not pathfinding.creates_enclosedSpaces(placement, board):
+                        possible.append(placement)
+                print("PIECE WONT CREATE ENCLOSED SPACES")
+                print("PIECE ALSO CREATES THE LEAST HEIGHT")
+                least_height_added = pathfinding.get_shortestHeight(possible, board)
+                drawPiece(least_height_added, phantomPiece = True)
 
             while checkForKeyPress() == None:
                 pygame.display.update()
@@ -291,7 +325,10 @@ def runGame(tetriminos):
                     lastMoveDownTime = time.time()
                     lastMoveSidewaysTime = time.time()
                 elif (event.key == K_i):
-                    showInfoScreen(None, None)
+                    #print(board_history)
+                    #print(fallingPiece_history)
+                    board, fallingPiece = showInfoScreen(board_history, fallingPiece_history, board, fallingPiece, index)
+                    phantomPiece = getPhantomPiece(board, fallingPiece)
                     lastFalltime = time.time()
                     lastMoveDownTime = time.time()
                     lastMoveSidewaysTime = time.time()
@@ -305,19 +342,26 @@ def runGame(tetriminos):
             elif event.type == KEYDOWN:
                 if (event.key == K_c) and not storedThisRound:
 
-                    if holdPiece: tempPiece = holdPiece
+                    if holdPiece:
+                        tempPiece = holdPiece
+                        holdPiece = fallingPiece
+                        holdPiece['y'] = -1
+                        holdPiece['x'] = int(BOARDWIDTH / 2) - int(TEMPLATEWIDTH / 2)
+                        fallingPiece = tempPiece
+                        phantomPiece = getPhantomPiece(board, fallingPiece)
+                        board_history.append(copy.deepcopy(board))
+                        fallingPiece_history.append(copy.deepcopy(fallingPiece))
+                        index += 1
+                        storedThisRound = True
                     else:
-                        tempPiece = nextPiece
-                        nextPiece = next(tetriminos)
+                        holdPiece = fallingPiece
+                        holdPiece['y'] = -1
+                        holdPiece['x'] = int(BOARDWIDTH / 2) - int(TEMPLATEWIDTH / 2)
+                        phantomPiece = None
+                        storedThisRound = True
+                        storedFirstTime = True
+                        break
 
-                    holdPiece = fallingPiece
-                    holdPiece['y'] = -1
-                    holdPiece['x'] = int(BOARDWIDTH / 2) - int(TEMPLATEWIDTH / 2)
-
-                    fallingPiece = tempPiece
-                    if fallingPiece: phantomPiece = getPhantomPiece(board, fallingPiece)
-                    storedThisRound = True
-                    #break
                 # moving the piece sideways
                 elif (event.key == K_LEFT or event.key == K_a) and isValidPosition(board, fallingPiece, adjX=-1):
                     fallingPiece['x'] -= 1
@@ -375,7 +419,8 @@ def runGame(tetriminos):
                         if not isValidPosition(board, fallingPiece, adjY=i):
                             break
                     fallingPiece['y'] += i - 1
-
+        if storedFirstTime:
+            continue
         # handle moving the piece because of user input
         if (movingLeft or movingRight) and time.time() - lastMoveSidewaysTime > MOVESIDEWAYSFREQ:
             if movingLeft and isValidPosition(board, fallingPiece, adjX=-1):
@@ -400,7 +445,6 @@ def runGame(tetriminos):
             if not isValidPosition(board, fallingPiece, adjY=1):
                 # falling piece has landed, set it on the board
                 addToBoard(board, fallingPiece)
-                board_history.append(board)
                 score += removeCompleteLines(board)
                 level, fallFreq = calculateLevelAndFallFreq(score)
                 fallingPiece = None
@@ -458,21 +502,60 @@ def checkForKeyPress():
 ##        return event.key
 ##    return None
 
-def showInfoScreen(board_history, tetrimino_order):
+def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, index):
     # Create buttons on the bottom of the tetris board
     '''
     Buttons:
         game_start : the initial state of the game
         previous_piece : the prev piece dropped         (does nothing at start of game)
-        previous_move  : the previous keyboardinput                 ""
-        next_move      : the next keyboardinput         (does nothing at end of game)
         next_piece     : the next piece dropped                     ""
         game_end       : the last board state           (will not always be a finished game)
     '''
     # The mentor should still be present at every move
     # ADD a button "verbose" or something that provides an explanation of the mentors move
     # reommendation.
-    pass
+    index = index
+    max_index = index
+    board = curr_board
+    fallingPiece = fallingPiece
+    board_history = board_history
+    fallingPiece_history = tetrimino_order
+    print(len(board_history))
+    print(len(fallingPiece_history))
+    while True:
+        for event in pygame.event.get():
+            if event.type == KEYDOWN:
+                if event.key == K_a and index - 1 >= 0:
+                    board = board_history[index - 1]
+                    fallingPiece = fallingPiece_history[index - 1]
+                    index -= 1
+                    print(index)
+                    DISPLAYSURF.fill(BGCOLOR)
+                    drawBoard(board)
+                    drawPiece(fallingPiece)
+                    pygame.display.update()
+                    FPSCLOCK.tick(FPS)
+                elif event.key == K_d and index + 1 < max_index:
+                    board = board_history[index + 1]
+                    fallingPiece = fallingPiece_history[index + 1]
+                    index += 1
+                    print(index)
+                    DISPLAYSURF.fill(BGCOLOR)
+                    drawBoard(board)
+                    drawPiece(fallingPiece)
+                    pygame.display.update()
+                    FPSCLOCK.tick(FPS)
+            elif event.type == KEYUP:
+                if event.key == K_i:
+                    return (board, fallingPiece)
+            else:
+                print("Updating")
+                DISPLAYSURF.fill(BGCOLOR)
+                drawBoard(board)
+                drawPiece(fallingPiece)
+                pygame.display.update()
+                FPSCLOCK.tick(FPS)
+
 
 def showTextScreen(text):
     # This function displays large text in the
@@ -592,7 +675,7 @@ def getBlankBoard():
 
 
 def isOnBoard(x, y):
-    return x >= 0 and x < BOARDWIDTH and y < BOARDHEIGHT
+    return x >= 0 and x < BOARDWIDTH and y < BOARDHEIGHT and y >= 0
 
 
 def isValidPosition(board, piece, adjX=0, adjY=0):
