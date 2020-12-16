@@ -42,18 +42,18 @@ def get_metrics(board, placement):
     metrics["height_added"] = heightAdded(placement, board)
     metrics["change_num_overhangs"] = change_num_overhangs(placement, board)
     metrics["in_enclosure"] = is_in_enclosure(placement, board)
-    metrics["can_move"] = can_move(placement, board)
+    metrics["is_stuck"] = is_stuck(placement, board)
     return metrics
 
-def can_move(placement, board):
+def is_stuck(placement, board):
     startingRot = placement['rotation']
     tempPiece = copy.deepcopy(placement)
     if tetris.isValidPosition(board, tempPiece, adjX=1) or tetris.isValidPosition(board, tempPiece, adjX=-1) \
-    or tetris.isValidPosition(board, tempPiece, adjY=-1): return True
+    or tetris.isValidPosition(board, tempPiece, adjY=-1): return 0
     for a in range(len(tetris.PIECES[tempPiece['shape']])):
         tempPiece['rotation'] = (tempPiece['rotation'] - 1) % len(tetris.PIECES[tempPiece['shape']])
-        if tetris.isValidPosition(board, tempPiece) and tempPiece['rotation'] != startingRot: return True
-    return False
+        if tetris.isValidPosition(board, tempPiece) and tempPiece['rotation'] != startingRot: return 0
+    return 1
 
 def is_in_enclosure(placement, board):
     enclosure_list = getEnclosedSpaces(board)
@@ -176,6 +176,22 @@ def get_shortestHeight(placements, board):
             minimum_height_index = i
     return placements[minimum_height_index]
 
-
+def get_roughness(board):
+    uniqueGapWidths = []
+    currentHeight = 0
+    prevHeight = 0
+    currentGap = 1
+    for x in range(tetris.BOARDWIDTH):
+        for y in range(tetris.BOARDHEIGHT):
+            if board[x][y] != tetris.BLANK:
+                currentHeight = y
+                if prevHeight == currentHeight:
+                    currentGap += 1
+                else:
+                    if currentGap not in uniqueGapWidths:
+                        uniqueGapWidths.append(currentGap)
+                    currentGap = 1
+                prevHeight = currentHeight
+    return len(uniqueGapWidths)
 
 
