@@ -305,8 +305,7 @@ def runGame():
                 elif (event.key == K_i):
                     #print(board_history)
                     #print(fallingPiece_history)
-                    board, fallingPiece, new_index = showInfoScreen(board_history, fallingPiece_history, board, fallingPiece, index)
-                    board_history = board_history[0:new_index+1]
+                    board, fallingPiece, board_history, fallingPiece_history, index = showInfoScreen(board_history, fallingPiece_history, board, fallingPiece, index-1)
                     phantomPiece = getPhantomPiece(board, fallingPiece)
                     lastFalltime = time.time()
                     lastMoveDownTime = time.time()
@@ -491,12 +490,23 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
     fallingPiece = fallingPiece
     board_history = board_history
     fallingPiece_history = tetrimino_order
+    placements = None
+    placement_index = 0
+    curr_placement = None
+    placement_mode = False
+    print("SHOULD BE EQUAL")
     print(len(board_history))
     print(len(fallingPiece_history))
+    print("----------------")
     while True:
         for event in pygame.event.get():
             if event.type == KEYDOWN:
-                if event.key == K_a and index - 1 >= 0:
+                if event.key == K_a and index - 1 > 0:
+                    print(index)
+                    placement_mode = False
+                    placements = None
+                    placement_index = 0
+                    curr_placement = None
                     board = board_history[index - 1]
                     fallingPiece = fallingPiece_history[index - 1]
                     index -= 1
@@ -506,7 +516,12 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
                     drawPiece(fallingPiece)
                     pygame.display.update()
                     FPSCLOCK.tick(FPS)
-                elif event.key == K_d and index + 1 < max_index:
+                elif event.key == K_d and index + 1 <= max_index:
+                    print(index)
+                    placement_mode = False
+                    placements = None
+                    placement_index = 0
+                    curr_placement = None
                     board = board_history[index + 1]
                     fallingPiece = fallingPiece_history[index + 1]
                     index += 1
@@ -516,16 +531,58 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
                     drawPiece(fallingPiece)
                     pygame.display.update()
                     FPSCLOCK.tick(FPS)
+                elif event.key == K_x:
+                    if not placements:
+                        placement_mode = True
+                        placements = get_placements(fallingPiece, board)
+                        print(placements)
+                        placement_index = 0
+                        print(placement_index)
+                        curr_placement = placements[placement_index]
+                        DISPLAYSURF.fill(BGCOLOR)
+                        drawPiece(curr_placement, phantomPiece = True)
+                        drawBoard(board)
+                        drawPiece(fallingPiece)
+                        pygame.display.update()
+                        FPSCLOCK.tick()
+                elif event.key == K_LEFT:
+                    if placements and placement_index > 0 and placement_mode:
+                        placement_index -= 1
+                        print(placements)
+                        curr_placement = placements[placement_index]
+                        print(curr_placement)
+                        DISPLAYSURF.fill(BGCOLOR)
+                        drawPiece(curr_placement, phantomPiece = True)
+                        drawBoard(board)
+                        drawPiece(fallingPiece)
+                        pygame.display.update()
+                        FPSCLOCK.tick()
+                elif event.key == K_RIGHT:
+                    if placements and placement_index < len(placements) - 1 and placement_mode:
+                        placement_index += 1
+                        print(placements)
+                        curr_placement = placements[placement_index]
+                        print(curr_placement)
+                        DISPLAYSURF.fill(BGCOLOR)
+                        drawPiece(curr_placement, phantomPiece = True)
+                        drawBoard(board)
+                        drawPiece(fallingPiece)
+                        pygame.display.update()
+                        FPSCLOCK.tick()
             elif event.type == KEYUP:
                 if event.key == K_i:
-                    return (board, fallingPiece, index)
-            else:
-                print("Updating")
-                DISPLAYSURF.fill(BGCOLOR)
-                drawBoard(board)
-                drawPiece(fallingPiece)
-                pygame.display.update()
-                FPSCLOCK.tick(FPS)
+                    board_history = board_history[0:index+1]
+                    fallingPiece_history = fallingPiece_history[0:index+1]
+                    print(len(board_history))
+                    print(len(fallingPiece_history))
+                    return (board, fallingPiece, board_history, fallingPiece_history, index)
+            print("Updating")
+            DISPLAYSURF.fill(BGCOLOR)
+            drawBoard(board)
+            drawPiece(fallingPiece)
+            if curr_placement and placement_mode: drawPiece(curr_placement, phantomPiece = True)
+            pygame.display.update()
+            FPSCLOCK.tick(FPS)
 
 
 def showTextScreen(text):
