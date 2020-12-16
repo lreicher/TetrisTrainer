@@ -243,14 +243,6 @@ def runGame():
 
             placements = get_placements(fallingPiece, board)
 
-            # LIST OF ENCLOSED SPACES
-            enclosed_spaces = metrics.getEnclosedSpaces(board)
-            # STRIPED PLACEMENTS (ENCLOSED)
-            placements = metrics.strip_enclosed(enclosed_spaces, placements)
-
-            # PRINT THE MOVE THAT CLEARS THE MOST LINES
-            printed = False
-
             for placement in placements:
                 print(metrics.get_metrics(board, placement))
             while checkForKeyPress() == None:
@@ -303,7 +295,6 @@ def runGame():
                     board_history.append(copy.deepcopy(board))
                     fallingPiece_history.append(copy.deepcopy(fallingPiece))
 
-                    index += 1
                     storedThisRound = True
 
                 # moving the piece sideways
