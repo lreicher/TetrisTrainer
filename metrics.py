@@ -25,6 +25,10 @@ def heuristic_eval(placement, board):
 
     summed_weights = ld_weight + cnes_weight + cno_weight + ug_weight
     weighted_sum = ((ld_weight * n_ld)+(cnes_weight * n_cnes)+(cno_weight * n_cno)+(ug_weight * n_ug))/summed_weights
+
+    if placement_metrics["in_enclosure"] == 1 or placement_metrics["is_stuck"] == 1:
+        return 0
+    
     return weighted_sum
 
 
