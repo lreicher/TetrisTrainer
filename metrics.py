@@ -18,7 +18,7 @@ def score_placements(placements, board):
 def curve_scores(scores):
     curved_scores = []
     low_score = 100
-    high_score = 0
+    high_score = 1
     for score in scores:
         if score > high_score:
             high_score = score
