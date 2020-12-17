@@ -18,7 +18,7 @@ def curve_scores(scores):
         if score < low_score:
             low_score = score
     for score in scores:
-        curved_score = ((score - low_score)/(high_score - low_score))
+        curved_score = 100 * ((score - low_score)/(high_score - low_score))
         curved_scores.append(curved_score)
     return curved_scores
             
