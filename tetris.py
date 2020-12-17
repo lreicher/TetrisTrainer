@@ -225,9 +225,9 @@ def runGame():
     holdPiece = None
     storedThisRound = False
 
-    played_move = []
-    metrics_list = []
-    need_to_update = False
+    #played_move = []
+    #metrics_list = []
+    #need_to_update = False
 
     board_history.append(copy.deepcopy(board))
     fallingPiece_history.append(copy.deepcopy(fallingPiece))
@@ -251,10 +251,18 @@ def runGame():
 
             placements = get_placements(fallingPiece, board)
 
-            need_to_update = True
-            for placement in placements:
-                metrics_list.append(metrics.get_metrics(board, placement, raw=True))
-            played_move = np.full(len(metrics_list), 0)
+            #need_to_update = True
+            #for placement in placements:
+                #metrics_list.append(metrics.get_metrics(board, placement, raw=True))
+            #played_move = np.full(len(metrics_list), 0)
+
+            scores = metrics.score_placements(placements, board)
+            max_score = max(scores)
+            max_index = scores.index(max_score)
+            best_place = placements[max_index]
+            print(max_score)
+            print(best_place)
+            drawPiece(best_place, phantomPiece=True)
 
             while checkForKeyPress() == None:
                 pygame.display.update()
@@ -393,11 +401,11 @@ def runGame():
             if not isValidPosition(board, fallingPiece, adjY=1):
                 # falling piece has landed, set it on the board
                 addToBoard(board, fallingPiece)
-                if need_to_update:
-                    played_move[placements.index(fallingPiece)] = 1
-                    features.extend(metrics_list)
-                    labels.extend(played_move)
-                    need_to_update = False
+                #if need_to_update:
+                #    played_move[placements.index(fallingPiece)] = 1
+                #    features.extend(metrics_list)
+                #    labels.extend(played_move)
+                #    need_to_update = False
                 score += removeCompleteLines(board)
                 level, fallFreq = calculateLevelAndFallFreq(score)
                 fallingPiece = None
