@@ -9,6 +9,23 @@ def score_placements(placements, board):
 
 def heuristic_eval(placement, board):
     placement_metrics = get_metrics(placement, board)
+    line_difference = placement_metrics["height_added"] - placement_metrics["num_lines_cleared"]
+    ld_weight = 10
+    #ie_weight = 8
+    #is_stuck = 7
+    cnes_weight = 5
+    cno_weight = 3
+    ug_weight 1
+
+    n_ld = 100 * (( line_difference - (-4) )/( 4 - (-4)))
+    #next line looks sus
+    n_cnes = 100 * ((placement_metrics["change_num_enclosedSpaces"] - (-200))/(200 - (-200)))
+    n_cno = 100 * ((placement_metrics["change_num_overhangs"] - (-2))/(2 - (-2)))
+    n_ug = 100 * ((placement_metrics["unique_gaps"] - (-4))/(4 - (-4)))
+
+    summed_weights = ld_weight + cnes_weight + cno_weight + ug_weight
+    weighted_sum = ((ld_weight * n_ld)+(cnes_weight * n_cnes)+(cno_weight * n_cno)+(ug_weight * n_ug))/summed_weights
+    return weighted_sum
 
 
 def get_metrics(board, placement):
