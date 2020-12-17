@@ -13,7 +13,7 @@ def score_placements(placements, board):
     score = []
     for placement in placements:
         score.append(heuristic_eval(placement, board))
-    return curve_scores(score)
+    return score
 
 def curve_scores(scores):
     curved_scores = []
@@ -33,7 +33,59 @@ def curve_scores(scores):
             curved_scores.append(curved_score)
     return curved_scores
 
+def callout_deviant(placements, board):
+    placements_metrics = []
+    placement_metrics_sums = {}
+    placement_metrics_avgs = {}
+    placement_metrics_xms = {}
+    placements_metrics_xms = {}
+    placement_metrics_devs = {}
+    placements_metrics_devs = {}
+    population_size = len(placements)
+    
+    for placement in placements:
+        placements_metrics.append(get_metrics(board, placement))    
+    for placement_metrics in placements_metrics:
+        for metric,value in placement_metrics.items():
+            if metric not in placement_metrics_sums.keys():
+                placement_metrics_sums[metric] = value
+            else:
+                placement_metrics_sums[metric] = placement_metrics_sums[metric] + value
+        for metric,value in placement_metrics.items():
+            placement_metrics_avgs[metric] = placement_metrics_sums[metric] / population_size
+    for placement_metrics in placements_metrics:
+        placement_metrics_xms.clear()
+        for metric,value in placement_metrics.items():
+            if metric not in placement_metrics_xms.keys():
+                placement_metrics_xms[metric] = math.pow(value - placement_metrics_avgs[metric],2)
+            else:
+                placement_metrics_xms[metric] = placement_metrics_xms[metric] + (math.pow(value - placement_metrics_avgs[metric],2))
+        placements_metrics_xms[placement_metrics] = placement_metrics_xms
+    for placement_metrics in placements_metrics:
+        placement_metrics_devs.clear()
+        for metric,value in placement_metrics.items():
+            placement_metrics_devs[metric] = math.sqrt((placements_metrics_xms[placement_metrics][metric])/population_size)
+        placements_metrics_devs[placement_metrics] = placement_metrics_devs
+    scores = score_placements(placements, board)
+    high_score = 1
+    for score in scores:
+        if score > high_score:
+            high_score = score
+    most_deviant = 0
+    for placement in placements:
+        if high_score == heuristic_eval(placement_board):
+            best_placement_metrics = get_metrics(board, placement)
+            for metric,value in best_placement_metrics:
+                if most_deviant < placements_metrics_devs[best_placement_metrics][metric]:
+                    most_deviant = placements_metrics_devs[best_placement_metrics][metric]
+            for metric,value in best_placement_metrics:
+                if most_deviant == placements_metrics_devs[best_placement_metrics][metric]:
+                    most_deviant_name = metric
+            return (placement,most_deviant_name)
+    
+        
 
+        
 def heuristic_eval(placement, board):
     placement_metrics = get_metrics(board, placement)
     line_difference = placement_metrics["height_added"] - placement_metrics["num_lines_cleared"]
@@ -46,7 +98,7 @@ def heuristic_eval(placement, board):
 
     n_ld = 100 - 100 * ((line_difference - (-4) )/( 4 - (-4)))
     #next line looks sus
-    n_cnes = 100 -100 * ((placement_metrics["change_num_enclosedSpaces"] - (-40))/(40 - (-40)))
+    n_cnes = 100 -100 * ((placement_metrics["change_num_enclosedSpaces"] - (-200))/(200 - (-200)))
     n_cno = 100 - 100 * ((placement_metrics["change_num_overhangs"] - (-2))/(2 - (-2)))
     n_ug = 100 * ((placement_metrics["unique_gaps"] - (-4))/(4 - (-4)))
 
