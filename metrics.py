@@ -94,13 +94,13 @@ def heuristic_eval(placement, board):
     ld_weight = 5
     #ie_weight = 8
     #is_weight = 7
-    cnes_weight = 10
+    cnes_weight = 15
     cno_weight = 3
     ug_weight = 1
 
     n_ld = 100 - 100 * ((line_difference - (-4) )/( 4 - (-4)))
     #next line looks sus
-    n_cnes = 100 -100 * ((placement_metrics["change_num_enclosedSpaces"] - (-200))/(200 - (-200)))
+    n_cnes = 100 -100 * ((placement_metrics["change_num_enclosedSpaces"] - (-40))/(40 - (-40)))
     n_cno = 100 - 100 * ((placement_metrics["change_num_overhangs"] - (-2))/(2 - (-2)))
     n_ug = 100 * ((placement_metrics["unique_gaps"] - (-4))/(4 - (-4)))
 
@@ -108,6 +108,19 @@ def heuristic_eval(placement, board):
     weighted_sum = ((ld_weight * n_ld)+(cnes_weight * n_cnes)+(cno_weight * n_cno)+(ug_weight * n_ug))/summed_weights
 
     return weighted_sum
+
+def should_hold(board, placements, holdPiece=None, next_piece=None):
+    if not holdPiece and not next_piece:
+        return False
+
+    max_score = max(score_placements(placements, board))
+    if not holdPiece:
+        next_score = max(score_placements(tetris.get_placements(next_piece, board),board))
+        if next_score > max_score: return True
+    else:
+        hold_score = max(score_placements(tetris.get_placements(holdPiece, board),board))
+        if hold_score > max_score: return True
+    return False
 
 def get_metrics_mean(board, placements):
     metrics = []

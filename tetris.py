@@ -45,6 +45,8 @@ LIGHTBLUE   = ( 20,  20, 175)
 YELLOW      = (155, 155,   0)
 LIGHTYELLOW = (175, 175,  20)
 EGGSHELL    = (94, 92, 84)
+DEEPSPACE   = (58, 96, 110)
+WEIRDGREEN  = (170, 174, 142)
 
 BORDERCOLOR = BLUE
 BGCOLOR = BLACK
@@ -235,7 +237,7 @@ def runGame():
     board_history.append(copy.deepcopy(board))
     fallingPiece_history.append(copy.deepcopy(fallingPiece))
 
-    best_place = update_reccomendation(fallingPiece, board)
+    best_place = update_reccomendation(fallingPiece, board, holdPiece, nextPiece)
     #print(placements)
 
     while True: # game loop
@@ -252,7 +254,7 @@ def runGame():
             nextPiece = getNewPiece()
             lastFallTime = time.time() # reset lastFallTime
 
-            best_place = update_reccomendation(fallingPiece, board)
+            best_place = update_reccomendation(fallingPiece, board, holdPiece, nextPiece)
             #need_to_update = True
             #for placement in placements:
                 #metrics_list.append(metrics.get_metrics(board, placement, raw=True))
@@ -279,7 +281,7 @@ def runGame():
                     #print(fallingPiece_history)
                     DISPLAYSURF.fill(BGCOLOR)
                     board, fallingPiece, board_history, fallingPiece_history = showInfoScreen(copy.deepcopy(board_history), copy.deepcopy(fallingPiece_history), copy.deepcopy(board), copy.deepcopy(fallingPiece), board_history.index(board))
-                    best_place = update_reccomendation(fallingPiece, board)
+                    best_place = update_reccomendation(fallingPiece, board, holdPiece, nextPiece)
                     phantomPiece = getPhantomPiece(board, fallingPiece)
                     lastFalltime = time.time()
                     lastMoveDownTime = time.time()
@@ -308,7 +310,7 @@ def runGame():
                     board_history.append(copy.deepcopy(board))
                     fallingPiece_history.append(copy.deepcopy(fallingPiece))
 
-                    best_place = update_reccomendation(fallingPiece, board)
+                    best_place = update_reccomendation(fallingPiece, board, holdPiece, nextPiece)
                     storedThisRound = True
 
                 # moving the piece sideways
@@ -416,24 +418,24 @@ def runGame():
         if fallingPiece != None:
             drawPiece(fallingPiece)
             drawPiece(phantomPiece, phantomPiece=True)
-            drawPiece(best_place, phantomPiece=True)
+            if best_place: drawPiece(best_place, best_place=True)
+            else: drawHoldRecc()
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
-def update_reccomendation(fallingPiece, board):
+def update_reccomendation(fallingPiece, board, holdPiece, nextPiece):
     placements = get_placements(fallingPiece, board)
-    print(metrics.get_metrics_std(board, placements))
+    if metrics.should_hold(board, placements, holdPiece, nextPiece): return None
     scores = metrics.score_placements(placements, board)
 
     max_score = max(scores)
     max_index = scores.index(max_score)
     best_place = placements[max_index]
-    print(metrics.get_metrics(board, best_place))
     return best_place
 
 def display_enclosed_area(board):
     for box in metrics.getEnclosedSpaces(board):
-        drawBox(box[0], box[1], WHITE, custom=True)
+        drawBox(box[0], box[1], DEEPSPACE, custom=True)
 
 def makeTextObjs(text, font, color):
     surf = font.render(text, True, color)
@@ -549,7 +551,7 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
                         DISPLAYSURF.blit(gradeSurf, gradeRect)
                         pygame.display.update()
 
-                        drawPiece(curr_placement, phantomPiece = True)
+                        drawPiece(curr_placement, best_place = True)
                         drawBoard(board)
                         drawPiece(fallingPiece)
                         pygame.display.update()
@@ -569,7 +571,7 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
                         DISPLAYSURF.blit(gradeSurf, gradeRect)
                         pygame.display.update()
 
-                        drawPiece(curr_placement, phantomPiece = True)
+                        drawPiece(curr_placement, best_place = True)
                         drawBoard(board)
                         drawPiece(fallingPiece)
                         pygame.display.update()
@@ -590,7 +592,7 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
                         DISPLAYSURF.blit(gradeSurf, gradeRect)
                         pygame.display.update()
 
-                        drawPiece(curr_placement, phantomPiece = True)
+                        drawPiece(curr_placement, best_place = True)
                         drawBoard(board)
                         drawPiece(fallingPiece)
                         pygame.display.update()
@@ -640,22 +642,18 @@ def checkForQuit():
         pygame.event.post(event) # put the other KEYUP event objects back
 
 def get_placements(fallingPiece, board):
-    tempX = fallingPiece['x']
-    tempY = fallingPiece['y']
-    tempR = fallingPiece['rotation']
+    tempPiece = copy.deepcopy(fallingPiece)
     # Returns a list of valid x,y placements for the fallingPiece
     placements = []
-    for a in range(len(PIECES[fallingPiece['shape']])):
+    for a in range(len(PIECES[tempPiece['shape']])):
         for i in range(-2, 8):
             for j in range(0,18):
-                fallingPiece['x'] = i
-                fallingPiece['y'] = j
-                if isValidPosition(board, fallingPiece) and not isValidPosition(board, fallingPiece, adjY=1):
-                    placements.append(copy.deepcopy(fallingPiece))
-        fallingPiece['rotation'] = (fallingPiece['rotation'] - 1) % len(PIECES[fallingPiece['shape']])
-    fallingPiece['x'] = tempX
-    fallingPiece['y'] = tempY
-    fallingPiece['rotation'] = tempR
+                tempPiece['x'] = i
+                tempPiece['y'] = j
+                if isValidPosition(board, tempPiece) and not isValidPosition(board, tempPiece, adjY=1):
+                    placements.append(copy.deepcopy(tempPiece))
+        tempPiece['rotation'] = (tempPiece['rotation'] - 1) % len(PIECES[tempPiece['shape']])
+
     placements = metrics.stripPlacements(board, placements)
     return placements
 
@@ -793,11 +791,13 @@ def drawBox(boxx, boxy, color, pixelx=None, pixely=None, custom=False):
 # DRAW THE OUTLINE OF THE PHANTOM PIECE
 # USE THE ABOVE drawBox() FUNCTION AS REFERENCE
 # THIS FUNCTION IS CALLED IN drawPiece()
-def drawPhantomPiece(color, pixelx=None, pixely=None):
+def drawPhantomPiece(color, pixelx=None, pixely=None, best_place=False):
+
     if color == BLANK:
         return
     # Add some transparency
     phantom_color = COLORS[color] + (0.5,)
+    if best_place: phantom_color = DEEPSPACE
     pygame.draw.rect(DISPLAYSURF, phantom_color, (pixelx + 1, pixely + 1, BOXSIZE - 1, BOXSIZE - 1))
     pygame.draw.rect(DISPLAYSURF, (0,0,0), (pixelx + 2, pixely + 2, BOXSIZE - 3, BOXSIZE - 3))
 
@@ -829,7 +829,7 @@ def drawStatus(score, level):
     DISPLAYSURF.blit(levelSurf, levelRect)
 
 
-def drawPiece(piece, pixelx=None, pixely=None, phantomPiece=False):
+def drawPiece(piece, pixelx=None, pixely=None, phantomPiece=False, best_place=False):
     shapeToDraw = PIECES[piece['shape']][piece['rotation']]
     if pixelx == None and pixely == None:
         # if pixelx & pixely hasn't been specified, use the location stored in the piece data structure
@@ -839,7 +839,8 @@ def drawPiece(piece, pixelx=None, pixely=None, phantomPiece=False):
     for x in range(TEMPLATEWIDTH):
         for y in range(TEMPLATEHEIGHT):
             if shapeToDraw[y][x] != BLANK:
-                if phantomPiece: drawPhantomPiece(piece['color'], pixelx + (x* BOXSIZE), pixely + (y*BOXSIZE))
+                if best_place: drawPhantomPiece(piece['color'], pixelx + (x* BOXSIZE), pixely + (y*BOXSIZE), best_place=True)
+                elif phantomPiece: drawPhantomPiece(piece['color'], pixelx + (x* BOXSIZE), pixely + (y*BOXSIZE))
                 else: drawBox(None, None, piece['color'], pixelx + (x * BOXSIZE), pixely + (y * BOXSIZE))
 
 
@@ -860,9 +861,13 @@ def drawHoldPiece(piece):
     holdRect.topleft = (120, 80)
     DISPLAYSURF.blit(holdSurf, holdRect)
     if piece != None:
-        drawPiece(piece, pixelx=120, pixely=100)
+        drawPiece(piece, pixelx=100, pixely=100)
 
-
+def drawHoldRecc():
+    holdSurf = BASICFONT.render('Hold this piece!', True, TEXTCOLOR)
+    holdRect = holdSurf.get_rect()
+    holdRect.topleft = (70, 220)
+    DISPLAYSURF.blit(holdSurf, holdRect)
 
 if __name__ == '__main__':
     main()
