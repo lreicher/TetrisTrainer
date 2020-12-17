@@ -13,7 +13,7 @@ def score_placements(placements, board):
     score = []
     for placement in placements:
         score.append(heuristic_eval(placement, board))
-    return score
+    return curve_scores(score)
 
 def curve_scores(scores):
     curved_scores = []
@@ -32,7 +32,7 @@ def curve_scores(scores):
             curved_score = 100 * ((score - low_score)/(high_score - low_score))
             curved_scores.append(curved_score)
     return curved_scores
-            
+
 
 def heuristic_eval(placement, board):
     placement_metrics = get_metrics(board, placement)
@@ -46,7 +46,7 @@ def heuristic_eval(placement, board):
 
     n_ld = 100 - 100 * ((line_difference - (-4) )/( 4 - (-4)))
     #next line looks sus
-    n_cnes = 100 -100 * ((placement_metrics["change_num_enclosedSpaces"] - (-200))/(200 - (-200)))
+    n_cnes = 100 -100 * ((placement_metrics["change_num_enclosedSpaces"] - (-40))/(40 - (-40)))
     n_cno = 100 - 100 * ((placement_metrics["change_num_overhangs"] - (-2))/(2 - (-2)))
     n_ug = 100 * ((placement_metrics["unique_gaps"] - (-4))/(4 - (-4)))
 

@@ -224,6 +224,7 @@ def runGame():
     phantomPiece = getPhantomPiece(board, fallingPiece)
     holdPiece = None
     storedThisRound = False
+    best_place = None
 
     #played_move = []
     #metrics_list = []
@@ -232,7 +233,7 @@ def runGame():
     board_history.append(copy.deepcopy(board))
     fallingPiece_history.append(copy.deepcopy(fallingPiece))
 
-    placements = get_placements(fallingPiece, board)
+    best_place = update_reccomendation(fallingPiece, board)
     #print(placements)
 
     while True: # game loop
@@ -249,24 +250,11 @@ def runGame():
             nextPiece = getNewPiece()
             lastFallTime = time.time() # reset lastFallTime
 
-            placements = get_placements(fallingPiece, board)
-
+            best_place = update_reccomendation(fallingPiece, board)
             #need_to_update = True
             #for placement in placements:
                 #metrics_list.append(metrics.get_metrics(board, placement, raw=True))
             #played_move = np.full(len(metrics_list), 0)
-
-            scores = metrics.score_placements(placements, board)
-            max_score = max(scores)
-            max_index = scores.index(max_score)
-            best_place = placements[max_index]
-            print(max_score)
-            print(best_place)
-            drawPiece(best_place, phantomPiece=True)
-
-            while checkForKeyPress() == None:
-                pygame.display.update()
-                FPSCLOCK.tick()
 
             if not isValidPosition(board, fallingPiece):
                 return # can't fit a new piece on the board, so game over
@@ -300,9 +288,6 @@ def runGame():
                     movingDown = False
 
             elif event.type == KEYDOWN:
-                if (event.key == K_l):
-                    print(features)
-                    print(labels)
                 if (event.key == K_c) and not storedThisRound:
                     tempPiece = holdPiece
                     holdPiece = fallingPiece
@@ -317,6 +302,7 @@ def runGame():
                     board_history.append(copy.deepcopy(board))
                     fallingPiece_history.append(copy.deepcopy(fallingPiece))
 
+                    best_place = update_reccomendation(fallingPiece, board)
                     storedThisRound = True
 
                 # moving the piece sideways
@@ -423,14 +409,21 @@ def runGame():
         if fallingPiece != None:
             drawPiece(fallingPiece)
             drawPiece(phantomPiece, phantomPiece=True)
+            drawPiece(best_place, phantomPiece=True)
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
+def update_reccomendation(fallingPiece, board):
+    placements = get_placements(fallingPiece, board)
+    scores = metrics.score_placements(placements, board)
+    max_score = max(scores)
+    max_index = scores.index(max_score)
+    best_place = placements[max_index]
+    return best_place
 
 def makeTextObjs(text, font, color):
     surf = font.render(text, True, color)
     return surf, surf.get_rect()
-
 
 def terminate():
     pygame.quit()
@@ -529,10 +522,18 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
 
                         placement_mode = True
                         placements = get_placements(fallingPiece, board)
+                        scores = metrics.score_placements(placements, board)
                         placement_index = 0
                         curr_placement = placements[placement_index]
+                        curr_grade = metrics.get_grade(scores[placement_index])
 
                         DISPLAYSURF.fill(BGCOLOR)
+                        gradeSurf = BASICFONT.render('Grade: %s' % curr_grade, True, TEXTCOLOR)
+                        gradeRect = gradeSurf.get_rect()
+                        gradeRect.topleft = (WINDOWWIDTH - 150, 20)
+                        DISPLAYSURF.blit(gradeSurf, gradeRect)
+                        pygame.display.update()
+
                         drawPiece(curr_placement, phantomPiece = True)
                         drawBoard(board)
                         drawPiece(fallingPiece)
@@ -544,8 +545,15 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
 
                         placement_index -= 1
                         curr_placement = placements[placement_index]
+                        curr_grade = metrics.get_grade(scores[placement_index])
 
                         DISPLAYSURF.fill(BGCOLOR)
+                        gradeSurf = BASICFONT.render('Grade: %s' % curr_grade, True, TEXTCOLOR)
+                        gradeRect = gradeSurf.get_rect()
+                        gradeRect.topleft = (WINDOWWIDTH - 150, 20)
+                        DISPLAYSURF.blit(gradeSurf, gradeRect)
+                        pygame.display.update()
+
                         drawPiece(curr_placement, phantomPiece = True)
                         drawBoard(board)
                         drawPiece(fallingPiece)
@@ -557,8 +565,16 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
 
                         placement_index += 1
                         curr_placement = placements[placement_index]
+                        curr_grade = metrics.get_grade(scores[placement_index])
+                        print(curr_grade)
 
                         DISPLAYSURF.fill(BGCOLOR)
+                        gradeSurf = BASICFONT.render('Grade: %s' % curr_grade, True, TEXTCOLOR)
+                        gradeRect = gradeSurf.get_rect()
+                        gradeRect.topleft = (WINDOWWIDTH - 150, 20)
+                        DISPLAYSURF.blit(gradeSurf, gradeRect)
+                        pygame.display.update()
+
                         drawPiece(curr_placement, phantomPiece = True)
                         drawBoard(board)
                         drawPiece(fallingPiece)
@@ -570,7 +586,6 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
                     return (copy.deepcopy(board), copy.deepcopy(fallingPiece), copy.deepcopy(board_history[0:_index+1]), copy.deepcopy(fallingPiece_history[0:_index+1]))
 
             print("Updating")
-            DISPLAYSURF.fill(BGCOLOR)
             drawBoard(board)
             drawPiece(fallingPiece)
             if curr_placement and placement_mode: drawPiece(curr_placement, phantomPiece = True)
@@ -712,26 +727,6 @@ def isCompleteLine(board, y):
         if board[x][y] == BLANK:
             return False
     return True
-
-def checkOverhang(board, x):
-    # Return True if the column has a gap with tetriminos above and below it.
-    blank = False
-    block = False
-    for y in range(BOARDHEIGHT):
-        if board[x][y] == BLANK:
-            blank = True
-            block = False
-        else:
-            block = True
-        if blank and block:
-            return True
-    return False
-
-def checkOverhangAll(board):
-    for x in range(BOARDWIDTH):
-        if checkOverhang(board,x):
-            return True
-    return False
 
 def removeCompleteLines(board):
     # Remove any completed lines on the board, move everything above them down, and return the number of complete lines.
