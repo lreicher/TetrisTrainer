@@ -276,6 +276,7 @@ def runGame():
                     #print(board_history)
                     #print(fallingPiece_history)
                     board, fallingPiece, board_history, fallingPiece_history = showInfoScreen(copy.deepcopy(board_history), copy.deepcopy(fallingPiece_history), copy.deepcopy(board), copy.deepcopy(fallingPiece), board_history.index(board))
+                    best_piece = update_reccomendation(fallingPiece, board)
                     phantomPiece = getPhantomPiece(board, fallingPiece)
                     lastFalltime = time.time()
                     lastMoveDownTime = time.time()
@@ -415,10 +416,13 @@ def runGame():
 
 def update_reccomendation(fallingPiece, board):
     placements = get_placements(fallingPiece, board)
+    print(metrics.get_metrics_std(board, placements))
     scores = metrics.score_placements(placements, board)
+
     max_score = max(scores)
     max_index = scores.index(max_score)
     best_place = placements[max_index]
+    print(metrics.get_metrics(board, best_place))
     return best_place
 
 def makeTextObjs(text, font, color):
@@ -523,6 +527,7 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
                         placement_mode = True
                         placements = get_placements(fallingPiece, board)
                         scores = metrics.score_placements(placements, board)
+                        scores = metrics.curve_scores(scores)
                         placement_index = 0
                         curr_placement = placements[placement_index]
                         curr_grade = metrics.get_grade(scores[placement_index])
@@ -641,6 +646,7 @@ def get_placements(fallingPiece, board):
     fallingPiece['x'] = tempX
     fallingPiece['y'] = tempY
     fallingPiece['rotation'] = tempR
+    placements = metrics.stripPlacements(board, placements)
     return placements
 
 def calculateLevelAndFallFreq(score):

@@ -1,6 +1,7 @@
 import tetris
 import heapq
 import copy
+from math import sqrt
 
 def get_grade(score):
     if score <= 60: return "F"
@@ -42,9 +43,9 @@ def callout_deviant(placements, board):
     placement_metrics_devs = {}
     placements_metrics_devs = {}
     population_size = len(placements)
-    
+
     for placement in placements:
-        placements_metrics.append(get_metrics(board, placement))    
+        placements_metrics.append(get_metrics(board, placement))
     for placement_metrics in placements_metrics:
         for metric,value in placement_metrics.items():
             if metric not in placement_metrics_sums.keys():
@@ -82,10 +83,10 @@ def callout_deviant(placements, board):
                 if most_deviant == placements_metrics_devs[best_placement_metrics][metric]:
                     most_deviant_name = metric
             return (placement,most_deviant_name)
-    
-        
 
-        
+
+
+
 def heuristic_eval(placement, board):
     placement_metrics = get_metrics(board, placement)
     line_difference = placement_metrics["height_added"] - placement_metrics["num_lines_cleared"]
@@ -105,30 +106,45 @@ def heuristic_eval(placement, board):
     summed_weights = ld_weight + cnes_weight + cno_weight + ug_weight
     weighted_sum = ((ld_weight * n_ld)+(cnes_weight * n_cnes)+(cno_weight * n_cno)+(ug_weight * n_ug))/summed_weights
 
-    if placement_metrics["in_enclosure"] == 1 or placement_metrics["is_stuck"] == 1:
-        return 0
-
     return weighted_sum
 
+def get_metrics_mean(board, placements):
+    metrics = []
+    for placement in placements:
+        metrics.append(get_metrics(board,placement,raw=True))
+    sum_metrics = [0,0,0,0,0]
+    for metric in metrics:
+        for i in range(len(metric)):
+            sum_metrics[i] += metric[i]
+    mean_metrics = [0,0,0,0,0]
+    for i in range(len(sum_metrics)):
+        mean_metrics[i] = sum_metrics[i] / len(sum_metrics)
+    return mean_metrics, metrics
+
+def get_metrics_std(board, placements):
+    mean_metrics, metrics = get_metrics_mean(board, placements)
+    res = [0,0,0,0,0]
+    for metric in metrics:
+        for i in range(len(res)):
+            res[i] += (metric[i] - mean_metrics[i]) ** 2
+    for i in range(len(res)):
+        res[i] = sqrt(res[i] / len(placements))
+    return res
 
 def get_metrics(board, placement, raw=False):
     if raw:
-        metrics = [0,0,0,0,0,0,0]
+        metrics = [0,0,0,0,0]
         metrics[0] = num_lines_cleared(placement, board)
         metrics[1] = change_num_enclosedSpaces(placement, board)
         metrics[2] = heightAdded(placement, board)
         metrics[3] = change_num_overhangs(placement, board)
-        metrics[4] = is_in_enclosure(placement, board)
-        metrics[5] = is_stuck(placement, board)
-        metrics[6] = get_change_roughness(placement, board)
+        metrics[4] = get_change_roughness(placement, board)
     else:
         metrics = {}
         metrics["num_lines_cleared"] = num_lines_cleared(placement, board)
         metrics["change_num_enclosedSpaces"] = change_num_enclosedSpaces(placement, board)
         metrics["height_added"] = heightAdded(placement, board)
         metrics["change_num_overhangs"] = change_num_overhangs(placement, board)
-        metrics["in_enclosure"] = is_in_enclosure(placement, board)
-        metrics["is_stuck"] = is_stuck(placement, board)
         metrics["unique_gaps"] = get_change_roughness(placement, board)
     return metrics
 
@@ -141,6 +157,10 @@ def is_stuck(placement, board):
         tempPiece['rotation'] = (tempPiece['rotation'] - 1) % len(tetris.PIECES[tempPiece['shape']])
         if tetris.isValidPosition(board, tempPiece) and tempPiece['rotation'] != startingRot: return 0
     return 1
+
+def catchTrickyMoves(placement, board):
+    pass
+
 
 def is_in_enclosure(placement, board):
     enclosure_list = getEnclosedSpaces(board)
@@ -239,7 +259,17 @@ def get_neighbor_cells(board, x, y):
             neighbors.append((x,y+j))
     return neighbors
 
-def strip_enclosed(enclosure_list, placements):
+def stripPlacements(board, placements):
+
+    res = []
+    enclosure_list = getEnclosedSpaces(board)
+    for placement in placements:
+        if not is_stuck(placement, board) and not is_enclosed(enclosure_list, placement):
+            res.append(placement)
+    return res
+
+def strip_enclosed(board, placements):
+
     res = []
     for placement in placements:
         if not is_enclosed(enclosure_list, placement):
