@@ -20,6 +20,8 @@ BOXSIZE = 20
 BOARDWIDTH = 10
 BOARDHEIGHT = 20
 BLANK = '.'
+features = []
+labels = []
 # FOR TESTING -- SAME PIECE ORDER
 #seed = random.random()
 #print(seed)
@@ -191,6 +193,7 @@ def main():
 
         runGame()
         #pygame.mixer.music.stop()
+
         showTextScreen('Game Over')
 
 
@@ -222,8 +225,6 @@ def runGame():
     holdPiece = None
     storedThisRound = False
 
-    features = []
-    labels = []
     played_move = []
     metrics_list = []
     need_to_update = False
@@ -235,8 +236,6 @@ def runGame():
     #print(placements)
 
     while True: # game loop
-        print(features)
-        print(labels)
         if fallingPiece == None:
             # No falling piece in play, so start a new piece at the top
             fallingPiece = nextPiece
@@ -254,7 +253,7 @@ def runGame():
 
             need_to_update = True
             for placement in placements:
-                metrics_list.append(metrics.get_metrics(board, placement))
+                metrics_list.append(metrics.get_metrics(board, placement, raw=True))
             played_move = np.full(len(metrics_list), 0)
 
             while checkForKeyPress() == None:
@@ -293,6 +292,9 @@ def runGame():
                     movingDown = False
 
             elif event.type == KEYDOWN:
+                if (event.key == K_l):
+                    print(features)
+                    print(labels)
                 if (event.key == K_c) and not storedThisRound:
                     tempPiece = holdPiece
                     holdPiece = fallingPiece

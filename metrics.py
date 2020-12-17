@@ -6,20 +6,32 @@ def score_placements(placements, board):
     score = {}
     for placement in placements:
         score[placement] = heuristic_eval(placement, board)
+    return score
 
 def heuristic_eval(placement, board):
     placement_metrics = get_metrics(placement, board)
+    pass
 
 
-def get_metrics(board, placement):
-    metrics = {}
-    metrics["num_lines_cleared"] = num_lines_cleared(placement, board)
-    metrics["change_num_enclosedSpaces"] = change_num_enclosedSpaces(placement, board)
-    metrics["height_added"] = heightAdded(placement, board)
-    metrics["change_num_overhangs"] = change_num_overhangs(placement, board)
-    metrics["in_enclosure"] = is_in_enclosure(placement, board)
-    metrics["is_stuck"] = is_stuck(placement, board)
-    metrics["unique_gaps"] = get_change_roughness(placement, board)
+def get_metrics(board, placement, raw=False):
+    if raw:
+        metrics = [0,0,0,0,0,0,0]
+        metrics[0] = num_lines_cleared(placement, board)
+        metrics[1] = change_num_enclosedSpaces(placement, board)
+        metrics[2] = heightAdded(placement, board)
+        metrics[3] = change_num_overhangs(placement, board)
+        metrics[4] = is_in_enclosure(placement, board)
+        metrics[5] = is_stuck(placement, board)
+        metrics[6] = get_change_roughness(placement, board)
+    else:
+        metrics = {}
+        metrics["num_lines_cleared"] = num_lines_cleared(placement, board)
+        metrics["change_num_enclosedSpaces"] = change_num_enclosedSpaces(placement, board)
+        metrics["height_added"] = heightAdded(placement, board)
+        metrics["change_num_overhangs"] = change_num_overhangs(placement, board)
+        metrics["in_enclosure"] = is_in_enclosure(placement, board)
+        metrics["is_stuck"] = is_stuck(placement, board)
+        metrics["unique_gaps"] = get_change_roughness(placement, board)
     return metrics
 
 def is_stuck(placement, board):
