@@ -8,6 +8,21 @@ def score_placements(placements, board):
         score.append(heuristic_eval(placement, board))
     return score
 
+def curve_scores(scores):
+    curved_scores = []
+    low_score = 100
+    high_score = 0
+    for score in scores:
+        if score > high_score:
+            high_score = score
+        if score < low_score:
+            low_score = score
+    for score in scores:
+        curved_score = ((score - low_score)/(high_score - low_score))
+        curved_scores.append(curved_score)
+    return curved_scores
+            
+
 def heuristic_eval(placement, board):
     placement_metrics = get_metrics(board, placement)
     line_difference = placement_metrics["height_added"] - placement_metrics["num_lines_cleared"]
