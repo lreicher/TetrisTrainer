@@ -24,9 +24,13 @@ def curve_scores(scores):
             high_score = score
         if score < low_score:
             low_score = score
-    for score in scores:
-        curved_score = 100 * ((score - low_score)/(high_score - low_score))
-        curved_scores.append(curved_score)
+    if high_score - low_score == 0:
+        for score in scores:
+            curved_scores.append(100)
+    else:
+        for score in scores:
+            curved_score = 100 * ((score - low_score)/(high_score - low_score))
+            curved_scores.append(curved_score)
     return curved_scores
             
 
