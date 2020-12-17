@@ -44,6 +44,7 @@ BLUE        = (  0,   0, 155)
 LIGHTBLUE   = ( 20,  20, 175)
 YELLOW      = (155, 155,   0)
 LIGHTYELLOW = (175, 175,  20)
+EGGSHELL    = (94, 92, 84)
 
 BORDERCOLOR = BLUE
 BGCOLOR = BLACK
@@ -225,6 +226,7 @@ def runGame():
     holdPiece = None
     storedThisRound = False
     best_place = None
+    view_enclosed_area = False
 
     #played_move = []
     #metrics_list = []
@@ -275,12 +277,15 @@ def runGame():
                 elif (event.key == K_i):
                     #print(board_history)
                     #print(fallingPiece_history)
+                    DISPLAYSURF.fill(BGCOLOR)
                     board, fallingPiece, board_history, fallingPiece_history = showInfoScreen(copy.deepcopy(board_history), copy.deepcopy(fallingPiece_history), copy.deepcopy(board), copy.deepcopy(fallingPiece), board_history.index(board))
-                    best_piece = update_reccomendation(fallingPiece, board)
+                    best_place = update_reccomendation(fallingPiece, board)
                     phantomPiece = getPhantomPiece(board, fallingPiece)
                     lastFalltime = time.time()
                     lastMoveDownTime = time.time()
                     lastMoveSidewaysTime = time.time()
+                elif (event.key == K_e):
+                    view_enclosed_area = not view_enclosed_area
                 elif (event.key == K_LEFT or event.key == K_a):
                     movingLeft = False
                 elif (event.key == K_RIGHT or event.key == K_d):
@@ -407,6 +412,7 @@ def runGame():
         drawStatus(score, level)
         drawNextPiece(nextPiece)
         drawHoldPiece(holdPiece)
+        if view_enclosed_area: display_enclosed_area(board)
         if fallingPiece != None:
             drawPiece(fallingPiece)
             drawPiece(phantomPiece, phantomPiece=True)
@@ -424,6 +430,10 @@ def update_reccomendation(fallingPiece, board):
     best_place = placements[max_index]
     print(metrics.get_metrics(board, best_place))
     return best_place
+
+def display_enclosed_area(board):
+    for box in metrics.getEnclosedSpaces(board):
+        drawBox(box[0], box[1], WHITE, custom=True)
 
 def makeTextObjs(text, font, color):
     surf = font.render(text, True, color)
@@ -762,11 +772,17 @@ def convertToPixelCoords(boxx, boxy):
     return (XMARGIN + (boxx * BOXSIZE)), (TOPMARGIN + (boxy * BOXSIZE))
 
 
-def drawBox(boxx, boxy, color, pixelx=None, pixely=None):
+def drawBox(boxx, boxy, color, pixelx=None, pixely=None, custom=False):
     # draw a single box (each tetromino piece has four boxes)
     # at xy coordinates on the board. Or, if pixelx & pixely
     # are specified, draw to the pixel coordinates stored in
     # pixelx & pixely (this is used for the "Next" piece).
+    if custom:
+        if pixelx == None and pixely == None:
+            pixelx, pixely = convertToPixelCoords(boxx, boxy)
+        pygame.draw.rect(DISPLAYSURF, color, (pixelx + 1, pixely + 1, BOXSIZE - 1, BOXSIZE - 1))
+        pygame.draw.rect(DISPLAYSURF, color, (pixelx + 1, pixely + 1, BOXSIZE - 4, BOXSIZE - 4))
+        return
     if color == BLANK:
         return
     if pixelx == None and pixely == None:

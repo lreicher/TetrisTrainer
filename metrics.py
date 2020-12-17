@@ -8,7 +8,8 @@ def get_grade(score):
     elif score <= 70: return "D"
     elif score <= 80: return "C"
     elif score <= 90: return "B"
-    elif score > 90: return "A"
+    elif score < 95: return "A"
+    else: return "A+"
 
 def score_placements(placements, board):
     score = []
@@ -158,8 +159,23 @@ def is_stuck(placement, board):
         if tetris.isValidPosition(board, tempPiece) and tempPiece['rotation'] != startingRot: return 0
     return 1
 
-def catchTrickyMoves(placement, board):
-    pass
+def isTricky(placement, board):
+    startingRot = placement['rotation']
+    tempPiece = copy.deepcopy(placement)
+    if (tetris.isValidPosition(board, tempPiece, adjX=1) or tetris.isValidPosition(board, tempPiece, adjX=-1)) \
+    and not tetris.isValidPosition(board, tempPiece, adjY=-1): return "slide"
+    for a in range(len(tetris.PIECES[tempPiece['shape']])):
+        tempPiece['rotation'] = (tempPiece['rotation'] - 1) % len(tetris.PIECES[tempPiece['shape']])
+        if tetris.isValidPosition(board, tempPiece) and tempPiece['rotation'] != startingRot: return "rotation"
+    return None
+
+def showWarnings(placement, board):
+    trick = isTricky(placement, board)
+    if trick:
+        if trick == "slide":
+            print("slide")
+        if trick == "rotation":
+            print("slide")
 
 
 def is_in_enclosure(placement, board):
