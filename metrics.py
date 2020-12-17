@@ -2,6 +2,13 @@ import tetris
 import heapq
 import copy
 
+def get_grade(score):
+    if score <= 60: return "F"
+    elif score <= 70: return "D"
+    elif score <= 80: return "C"
+    elif score <= 90: return "B"
+    elif score > 90: return "A"
+
 def score_placements(placements, board):
     score = []
     for placement in placements:
