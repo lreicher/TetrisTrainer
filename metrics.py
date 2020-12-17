@@ -12,7 +12,7 @@ def heuristic_eval(placement, board):
     line_difference = placement_metrics["height_added"] - placement_metrics["num_lines_cleared"]
     ld_weight = 10
     #ie_weight = 8
-    #is_stuck = 7
+    #is_weight = 7
     cnes_weight = 5
     cno_weight = 3
     ug_weight 1
