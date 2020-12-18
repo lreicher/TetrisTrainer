@@ -67,7 +67,7 @@ def explain_choice(choice_metrics,metric_index,metric_name):
         cno_message = "This move would make a difference of " +str(choice_metrics[metric_index]) + " number of overhangs."
         return cno_message
     elif metric_name == "unique_gaps":
-        ug_message = "This move would make a difference of " +str[choice_metrics[metric_index]) + " number of unique gap widths."
+        ug_message = "This move would make a difference of " + str(choice_metrics[metric_index]) + " number of unique gap widths."
         return ug_message
     else:
         er_message = "Something went wrong in metrics.explain_choice."

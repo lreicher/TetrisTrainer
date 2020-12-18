@@ -555,6 +555,11 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
                         curr_placement = placements[placement_index]
                         curr_grade = metrics.get_grade(curved_scores[placement_index])
 
+                        best_metrics,max_index, metric_name = metrics.callout_deviant(placements, board)
+                        print(metric_name)
+                        explanation = metrics.explain_choice(best_metrics, max_index, metric_name)
+                        print(explanation)
+
                         DISPLAYSURF.fill(BGCOLOR)
                         gradeSurf = BASICFONT.render('Grade: %s' % curr_grade, True, TEXTCOLOR)
                         gradeRect = gradeSurf.get_rect()
