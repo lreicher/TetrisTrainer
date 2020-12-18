@@ -127,22 +127,17 @@ def get_two_closest_placements(placement, placements, board, scores):
     return (below_placement, above_placement)
 
 def get_main_difference(placement, placements, board, scores):
-    heuristic_val = 0
-    bottom_heuristic_val = 0
-    above_heuristic_val = 0
-    bottom_vals = 0
-    above_vals = 0
-    best_vals = 0
-    biggest_below_difference = None
-    biggest_above_difference = None
-    below_placement, above_placement = get_two_closest_placements(placement, placements, board, scores)
-    heuristic_val, best_vals = heuristic_eval(placement, board, vals=True)
-    if below_placement:
-        bottom_heuristic_val, bottom_vals = heuristic_eval(below_placement, board, vals=True)
-    if above_placement:
-        above_heuristic_val, above_vals = heuristic_eval(above_placement, board, vals=True)
-    for i in range(len(best_vals)):
-        pass
+    mean_metrics, mean = get_metrics_mean(board, placements)
+    print("MEAN")
+    print(mean_metrics)
+    score, vals = heuristic_eval(placement, board, vals=True)
+    print("BEST")
+    print(vals)
+    difference = [0,0,0,0,0]
+    for i in range(len(difference)):
+        difference[i] = vals[i] - mean_metrics[i]
+    print("DIFFERENCE")
+    print(difference)
 
 
 def should_hold(board, placements, holdPiece=None, next_piece=None):

@@ -445,6 +445,9 @@ def update_reccomendation(fallingPiece, board, holdPiece, nextPiece):
     max_index = scores.index(max_score)
     best_place = placements[max_index]
 
+    # THIS IS PRINTING
+    metrics.get_main_difference(best_place, placements, board, scores)
+
     return best_place
 
 def display_enclosed_area(board):
