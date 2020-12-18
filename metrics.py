@@ -51,7 +51,27 @@ def callout_deviant(placements, board):
         else: placements_devs[i] = (best_metrics[i] - placements_means[i]) / placements_stds[i]
     max_dev = max(placements_devs)
     max_index = placements_devs.index(max_dev)
-    return max_index, placements_devs[i]
+    return best_metrics,max_index, placements_devs[i]
+
+def explain_choice(choice_metrics,metric_index,metric_name):
+    if metric_name == "num_lines_cleared":
+        nlc_message = "This move would clear " +str(choice_metrics[metric_index]) + " lines."
+        return nlc_message
+    elif metric_name == "change_num_enclosedSpaces":
+        cnes_message = "This move would make a difference of " +str(choice_metrics[metric_index]) + " enclosed spaces."
+        return cnes_message
+    elif metric_name == "height_added":
+        ha_message = "This move would make a difference of " +str(choice_metrics[metric_index]) + " lines of height."
+        return ha_message
+    elif metric_name == "change_num_overhangs":
+        cno_message = "This move would make a difference of " +str(choice_metrics[metric_index]) + " number of overhangs."
+        return cno_message
+    elif metric_name == "unique_gaps":
+        ug_message = "This move would make a difference of " +str[choice_metrics[metric_index]) + " number of unique gap widths."
+        return ug_message
+    else:
+        er_message = "Something went wrong in metrics.explain_choice."
+        return er_message
 
 def heuristic_eval(placement, board, vals=False):
     placement_metrics = get_metrics(board, placement)
