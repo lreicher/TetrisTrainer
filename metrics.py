@@ -85,10 +85,7 @@ def callout_deviant(placements, board):
                     most_deviant_name = metric
             return (placement,most_deviant_name)
 
-
-
-
-def heuristic_eval(placement, board):
+def heuristic_eval(placement, board, vals=False):
     placement_metrics = get_metrics(board, placement)
     line_difference = placement_metrics["height_added"] - placement_metrics["num_lines_cleared"]
     ld_weight = 5
@@ -106,8 +103,47 @@ def heuristic_eval(placement, board):
 
     summed_weights = ld_weight + cnes_weight + cno_weight + ug_weight
     weighted_sum = ((ld_weight * n_ld)+(cnes_weight * n_cnes)+(cno_weight * n_cno)+(ug_weight * n_ug))/summed_weights
+    if vals: return weighted_sum, (n_cnes, n_cno, n_ug, placement_metrics["height_added"], placement_metrics["num_lines_cleared"])
+    else: return weighted_sum
 
-    return weighted_sum
+def get_two_closest_placements(placement, placements, board, scores):
+    placement_index = placements.index(placement)
+    lesser_greater = 100
+    greatest_lesser = 0
+    above_index = None
+    below_index = None
+    above_placement = None
+    below_placement = None
+    for score in scores:
+        if score != scores[placement_index]:
+            if score > scores[placement_index] and score < lesser_greater:
+                above_index = scores.index(score)
+            elif score > greatest_lesser:
+                below_index = scores.index(score)
+    if above_index:
+        above_placement = placements[above_index]
+    if below_index:
+        below_placement = placements[below_index]
+    return (below_placement, above_placement)
+
+def get_main_difference(placement, placements, board, scores):
+    heuristic_val = 0
+    bottom_heuristic_val = 0
+    above_heuristic_val = 0
+    bottom_vals = 0
+    above_vals = 0
+    best_vals = 0
+    biggest_below_difference = None
+    biggest_above_difference = None
+    below_placement, above_placement = get_two_closest_placements(placement, placements, board, scores)
+    heuristic_val, best_vals = heuristic_eval(placement, board, vals=True)
+    if below_placement:
+        bottom_heuristic_val, bottom_vals = heuristic_eval(below_placement, board, vals=True)
+    if above_placement:
+        above_heuristic_val, above_vals = heuristic_eval(above_placement, board, vals=True)
+    for i in range(len(best_vals)):
+        pass
+
 
 def should_hold(board, placements, holdPiece=None, next_piece=None):
     if not holdPiece and not next_piece:
@@ -239,14 +275,17 @@ def change_num_overhangs(placement, board):
     tetris.addToBoard(tempBoard, placement)
     return getNumOverhangs(tempBoard) - getNumOverhangs(board)
 
-def getNumOverhangs(board):
+def getNumOverhangs(board, blocks=False):
     num_overhangs = 0
+    top_blocks = []
     for x in range(0,10):
         for y in range(2,20):
             if board[x][y] != tetris.BLANK:
                 if y + 1 <= 19:
                     if board[x][y+1] == tetris.BLANK:
+                        if blocks: top_blocks.append((x,y))
                         num_overhangs += 1
+    if blocks: return top_blocks
     return num_overhangs
 
 def getEnclosedSpaces(board):
@@ -344,5 +383,63 @@ def get_roughness(board):
                     currentGap = 1
                 prevHeight = currentHeight
     return len(uniqueGapWidths)
+
+
+def can_drop(piece, placement, board):
+    tempPiece = copy.deepcopy(piece)
+
+    if tempPiece['x'] != placement['x']: return False
+    if tempPiece['rotation'] != placement['rotation']: return False
+    for i in range(1, tetris.BOARDHEIGHT):
+        if not isValidPosition(board, tempPiece, adjY=i):
+            break
+    tempPiece['y'] += i - 1
+    if tempPiece['y'] != placement['y']: return False
+    return True
+
+"""
+def strip_difficult_moves(board, placements, fallingPiece):
+    # can move left or right
+    # can rotate
+    # then must move down
+    # loop
+    def get_neighbor_moves(piece, board, movedDown, movedHoriz, placement):
+        # [can_drop, must_go_down, can_move_left, can_move_right, can_rotate_left, can_rotate_right]
+        moves = []
+        moves.append(can_drop(piece, placement, board))
+        down = False
+        if movedHorizon: down = True
+        moves.append(down)
+        if movedDown:
+            for i in [-1,1]:
+                moves.append(tetris.isValidPosition(board, piece, adjX=i))
+        for i in [-1, 1]:
+            piece['rotation'] = (piece['rotation'] + i) % len(tetris.PIECES[piece['shape']])
+            if tetris.isValidPosition(board, piece): moves.append(True)
+            else: moves.append(False)
+            piece['rotation'] = (fallingPiece['rotation'] + (i * -1)) % len(tetris,PIECES[piece['shape']])
+        return moves
+
+    # can drop, same x coordinate, same rotation = goal state
+    num_moves = 5
+    for placement in placements:
+        goal_x = placement['x']
+        goal_y = placement['y']
+        goal_rot = placement['rot']
+        tempPiece = copy.deepcopy(fallingPiece)
+        path = []
+        falling_x = tempPiece['x']
+        falling_y = tempPiece['y']
+        while not path:
+            movedDown = True
+            movedHoriz = False
+            rotated = False
+            actions = {
+                move_horiz: None
+            }
+            for i in range(num_moves + 1):
+                    pass
+"""
+
 
 

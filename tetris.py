@@ -47,6 +47,7 @@ LIGHTYELLOW = (175, 175,  20)
 EGGSHELL    = (94, 92, 84)
 DEEPSPACE   = (58, 96, 110)
 WEIRDGREEN  = (170, 174, 142)
+PUMPKIN  = (247, 120, 22)
 
 BORDERCOLOR = BLUE
 BGCOLOR = BLACK
@@ -229,6 +230,9 @@ def runGame():
     storedThisRound = False
     best_place = None
     view_enclosed_area = False
+    view_over_hangs = False
+    view_phantom_piece = True
+    view_recommendation = False
 
     #played_move = []
     #metrics_list = []
@@ -288,6 +292,12 @@ def runGame():
                     lastMoveSidewaysTime = time.time()
                 elif (event.key == K_e):
                     view_enclosed_area = not view_enclosed_area
+                elif (event.key == K_u):
+                    view_over_hangs = not view_over_hangs
+                elif (event.key == K_f):
+                    view_phantom_piece = not view_phantom_piece
+                elif (event.key == K_r):
+                    view_recommendation = not view_recommendation
                 elif (event.key == K_LEFT or event.key == K_a):
                     movingLeft = False
                 elif (event.key == K_RIGHT or event.key == K_d):
@@ -296,6 +306,7 @@ def runGame():
                     movingDown = False
 
             elif event.type == KEYDOWN:
+                # storing the piece
                 if (event.key == K_c) and not storedThisRound:
                     tempPiece = holdPiece
                     holdPiece = fallingPiece
@@ -415,11 +426,13 @@ def runGame():
         drawNextPiece(nextPiece)
         drawHoldPiece(holdPiece)
         if view_enclosed_area: display_enclosed_area(board)
+        if view_over_hangs: display_over_hangs(board)
         if fallingPiece != None:
             drawPiece(fallingPiece)
-            drawPiece(phantomPiece, phantomPiece=True)
-            if best_place: drawPiece(best_place, best_place=True)
-            else: drawHoldRecc()
+            if view_phantom_piece: drawPiece(phantomPiece, phantomPiece=True)
+            if view_recommendation:
+                if best_place: drawPiece(best_place, best_place=True)
+                else: drawHoldRecc()
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
@@ -431,11 +444,17 @@ def update_reccomendation(fallingPiece, board, holdPiece, nextPiece):
     max_score = max(scores)
     max_index = scores.index(max_score)
     best_place = placements[max_index]
+
     return best_place
 
 def display_enclosed_area(board):
     for box in metrics.getEnclosedSpaces(board):
         drawBox(box[0], box[1], DEEPSPACE, custom=True)
+
+def display_over_hangs(board):
+    for box in metrics.getNumOverhangs(board, blocks=True):
+        pixelx, pixely = convertToPixelCoords(box[0], box[1])
+        pygame.draw.rect(DISPLAYSURF, PUMPKIN, (pixelx + 1, pixely + 16, BOXSIZE - 1, BOXSIZE - 16))
 
 def makeTextObjs(text, font, color):
     surf = font.render(text, True, color)
@@ -444,7 +463,6 @@ def makeTextObjs(text, font, color):
 def terminate():
     pygame.quit()
     sys.exit()
-
 
 # KRT 17/06/2012 rewrite event detection to deal with mouse use
 def checkForKeyPress():
@@ -458,19 +476,6 @@ def checkForKeyPress():
                 return event.key   #key found return with it
     # no quit or key events in queue so return None
     return None
-
-
-
-##def checkForKeyPress():
-##    # Go through event queue looking for a KEYUP event.
-##    # Grab KEYDOWN events to remove them from the event queue.
-##    checkForQuit()
-##
-##    for event in pygame.event.get([KEYDOWN, KEYUP]):
-##        if event.type == KEYDOWN:
-##            continue
-##        return event.key
-##    return None
 
 def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, index):
     # Create buttons on the bottom of the tetris board
@@ -495,6 +500,8 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
     placement_index = 0
     curr_placement = None
     placement_mode = False
+    scores = None
+    curved_scores = None
 
     while True:
         for event in pygame.event.get():
@@ -539,10 +546,11 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
                         placement_mode = True
                         placements = get_placements(fallingPiece, board)
                         scores = metrics.score_placements(placements, board)
-                        scores = metrics.curve_scores(scores)
+
+                        curved_scores = metrics.curve_scores(scores)
                         placement_index = 0
                         curr_placement = placements[placement_index]
-                        curr_grade = metrics.get_grade(scores[placement_index])
+                        curr_grade = metrics.get_grade(curved_scores[placement_index])
 
                         DISPLAYSURF.fill(BGCOLOR)
                         gradeSurf = BASICFONT.render('Grade: %s' % curr_grade, True, TEXTCOLOR)
@@ -552,6 +560,7 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
                         pygame.display.update()
 
                         drawPiece(curr_placement, best_place = True)
+                        #print(metrics.get_main_difference(curr_placement, placements, board, scores))
                         drawBoard(board)
                         drawPiece(fallingPiece)
                         pygame.display.update()
@@ -562,7 +571,7 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
 
                         placement_index -= 1
                         curr_placement = placements[placement_index]
-                        curr_grade = metrics.get_grade(scores[placement_index])
+                        curr_grade = metrics.get_grade(curved_scores[placement_index])
 
                         DISPLAYSURF.fill(BGCOLOR)
                         gradeSurf = BASICFONT.render('Grade: %s' % curr_grade, True, TEXTCOLOR)
@@ -572,6 +581,7 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
                         pygame.display.update()
 
                         drawPiece(curr_placement, best_place = True)
+                        #print(metrics.get_main_difference(curr_placement, placements, board, scores))
                         drawBoard(board)
                         drawPiece(fallingPiece)
                         pygame.display.update()
@@ -582,8 +592,8 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
 
                         placement_index += 1
                         curr_placement = placements[placement_index]
-                        curr_grade = metrics.get_grade(scores[placement_index])
-                        print(curr_grade)
+                        curr_grade = metrics.get_grade(curved_scores[placement_index])
+                        #print(curr_grade)
 
                         DISPLAYSURF.fill(BGCOLOR)
                         gradeSurf = BASICFONT.render('Grade: %s' % curr_grade, True, TEXTCOLOR)
@@ -593,6 +603,7 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
                         pygame.display.update()
 
                         drawPiece(curr_placement, best_place = True)
+                        #print(metrics.get_main_difference(curr_placement, placements, board, scores))
                         drawBoard(board)
                         drawPiece(fallingPiece)
                         pygame.display.update()
@@ -602,13 +613,12 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
                 if event.key == K_i:
                     return (copy.deepcopy(board), copy.deepcopy(fallingPiece), copy.deepcopy(board_history[0:_index+1]), copy.deepcopy(fallingPiece_history[0:_index+1]))
 
-            print("Updating")
+            #print("Updating")
             drawBoard(board)
             drawPiece(fallingPiece)
-            if curr_placement and placement_mode: drawPiece(curr_placement, phantomPiece = True)
+            if curr_placement and placement_mode: drawPiece(curr_placement, best_place = True)
             pygame.display.update()
             FPSCLOCK.tick(FPS)
-
 
 def showTextScreen(text):
     # This function displays large text in the
@@ -631,7 +641,6 @@ def showTextScreen(text):
     while checkForKeyPress() == None:
         pygame.display.update()
         FPSCLOCK.tick()
-
 
 def checkForQuit():
     for event in pygame.event.get(QUIT): # get all the QUIT events
@@ -701,14 +710,12 @@ def getPhantomPiece(board, fallingPiece):
     phantomPiece['y'] += i - 1
     return phantomPiece
 
-
 def addToBoard(board, piece):
     # fill in the board based on piece's location, shape, and rotation
     for x in range(TEMPLATEWIDTH):
         for y in range(TEMPLATEHEIGHT):
             if PIECES[piece['shape']][piece['rotation']][y][x] != BLANK:
                 board[x + piece['x']][y + piece['y']] = piece['color']
-
 
 def getBlankBoard():
     # create and return a new blank board data structure
@@ -717,10 +724,8 @@ def getBlankBoard():
         board.append([BLANK] * BOARDHEIGHT)
     return board
 
-
 def isOnBoard(x, y):
     return x >= 0 and x < BOARDWIDTH and y < BOARDHEIGHT and y >= 0
-
 
 def isValidPosition(board, piece, adjX=0, adjY=0):
     # Return True if the piece is within the board and not colliding
@@ -763,12 +768,10 @@ def removeCompleteLines(board):
             y -= 1 # move on to check next row up
     return numLinesRemoved
 
-
 def convertToPixelCoords(boxx, boxy):
     # Convert the given xy coordinates of the board to xy
     # coordinates of the location on the screen.
     return (XMARGIN + (boxx * BOXSIZE)), (TOPMARGIN + (boxy * BOXSIZE))
-
 
 def drawBox(boxx, boxy, color, pixelx=None, pixely=None, custom=False):
     # draw a single box (each tetromino piece has four boxes)
@@ -792,16 +795,14 @@ def drawBox(boxx, boxy, color, pixelx=None, pixely=None, custom=False):
 # USE THE ABOVE drawBox() FUNCTION AS REFERENCE
 # THIS FUNCTION IS CALLED IN drawPiece()
 def drawPhantomPiece(color, pixelx=None, pixely=None, best_place=False):
-
     if color == BLANK:
         return
     # Add some transparency
     phantom_color = COLORS[color] + (0.5,)
-    if best_place: phantom_color = DEEPSPACE
+    if best_place:
+        phantom_color = DEEPSPACE
     pygame.draw.rect(DISPLAYSURF, phantom_color, (pixelx + 1, pixely + 1, BOXSIZE - 1, BOXSIZE - 1))
     pygame.draw.rect(DISPLAYSURF, (0,0,0), (pixelx + 2, pixely + 2, BOXSIZE - 3, BOXSIZE - 3))
-
-
 
 def drawBoard(board):
     # draw the border around the board
@@ -813,7 +814,6 @@ def drawBoard(board):
     for x in range(BOARDWIDTH):
         for y in range(BOARDHEIGHT):
             drawBox(x, y, board[x][y])
-
 
 def drawStatus(score, level):
     # draw the score text
@@ -828,7 +828,6 @@ def drawStatus(score, level):
     levelRect.topleft = (WINDOWWIDTH - 150, 50)
     DISPLAYSURF.blit(levelSurf, levelRect)
 
-
 def drawPiece(piece, pixelx=None, pixely=None, phantomPiece=False, best_place=False):
     shapeToDraw = PIECES[piece['shape']][piece['rotation']]
     if pixelx == None and pixely == None:
@@ -842,7 +841,6 @@ def drawPiece(piece, pixelx=None, pixely=None, phantomPiece=False, best_place=Fa
                 if best_place: drawPhantomPiece(piece['color'], pixelx + (x* BOXSIZE), pixely + (y*BOXSIZE), best_place=True)
                 elif phantomPiece: drawPhantomPiece(piece['color'], pixelx + (x* BOXSIZE), pixely + (y*BOXSIZE))
                 else: drawBox(None, None, piece['color'], pixelx + (x * BOXSIZE), pixely + (y * BOXSIZE))
-
 
 # COULD COMBINE drawNextPiece AND drawHoldPiece INTO ONE FUNC BUT LAZY
 def drawNextPiece(piece):
