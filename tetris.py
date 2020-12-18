@@ -556,7 +556,7 @@ def showInfoScreen(board_history, tetrimino_order, curr_board, fallingPiece, ind
                         curr_grade = metrics.get_grade(curved_scores[placement_index])
 
                         best_metrics,max_index, metric_name = metrics.callout_deviant(placements, board)
-                        print(metric_name)
+                        print(max_index)
                         explanation = metrics.explain_choice(best_metrics, max_index, metric_name)
                         print(explanation)
 

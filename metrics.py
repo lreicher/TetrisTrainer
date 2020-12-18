@@ -54,19 +54,19 @@ def callout_deviant(placements, board):
     return best_metrics,max_index, placements_devs[i]
 
 def explain_choice(choice_metrics,metric_index,metric_name):
-    if metric_name == "num_lines_cleared":
+    if metric_index == 0:
         nlc_message = "This move would clear " +str(choice_metrics[metric_index]) + " lines."
         return nlc_message
-    elif metric_name == "change_num_enclosedSpaces":
+    elif metric_index == 1:
         cnes_message = "This move would make a difference of " +str(choice_metrics[metric_index]) + " enclosed spaces."
         return cnes_message
-    elif metric_name == "height_added":
+    elif metric_index == 2:
         ha_message = "This move would make a difference of " +str(choice_metrics[metric_index]) + " lines of height."
         return ha_message
-    elif metric_name == "change_num_overhangs":
+    elif metric_index == 3:
         cno_message = "This move would make a difference of " +str(choice_metrics[metric_index]) + " number of overhangs."
         return cno_message
-    elif metric_name == "unique_gaps":
+    elif metric_index == 4:
         ug_message = "This move would make a difference of " + str(choice_metrics[metric_index]) + " number of unique gap widths."
         return ug_message
     else:
