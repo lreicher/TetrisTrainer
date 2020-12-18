@@ -446,7 +446,7 @@ def update_reccomendation(fallingPiece, board, holdPiece, nextPiece):
     best_place = placements[max_index]
 
     # THIS IS PRINTING
-    metrics.get_main_difference(best_place, placements, board, scores)
+    print(metrics.callout_deviant(placements, board))
 
     return best_place
 

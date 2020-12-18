@@ -36,54 +36,22 @@ def curve_scores(scores):
     return curved_scores
 
 def callout_deviant(placements, board):
-    placements_metrics = []
-    placement_metrics_sums = {}
-    placement_metrics_avgs = {}
-    placement_metrics_xms = {}
-    placements_metrics_xms = {}
-    placement_metrics_devs = {}
-    placements_metrics_devs = {}
-    population_size = len(placements)
-
-    for placement in placements:
-        placements_metrics.append(get_metrics(board, placement))
-    for placement_metrics in placements_metrics:
-        for metric,value in placement_metrics.items():
-            if metric not in placement_metrics_sums.keys():
-                placement_metrics_sums[metric] = value
-            else:
-                placement_metrics_sums[metric] = placement_metrics_sums[metric] + value
-        for metric,value in placement_metrics.items():
-            placement_metrics_avgs[metric] = placement_metrics_sums[metric] / population_size
-    for placement_metrics in placements_metrics:
-        placement_metrics_xms.clear()
-        for metric,value in placement_metrics.items():
-            if metric not in placement_metrics_xms.keys():
-                placement_metrics_xms[metric] = math.pow(value - placement_metrics_avgs[metric],2)
-            else:
-                placement_metrics_xms[metric] = placement_metrics_xms[metric] + (math.pow(value - placement_metrics_avgs[metric],2))
-        placements_metrics_xms[placement_metrics] = placement_metrics_xms
-    for placement_metrics in placements_metrics:
-        placement_metrics_devs.clear()
-        for metric,value in placement_metrics.items():
-            placement_metrics_devs[metric] = math.sqrt((placements_metrics_xms[placement_metrics][metric])/population_size)
-        placements_metrics_devs[placement_metrics] = placement_metrics_devs
+    placements_stds = get_metrics_std(board,placements)
+    placements_means,placements_metrics = get_metrics_mean(board,placements)
+    placements_devs = [0,0,0,0,0]
     scores = score_placements(placements, board)
-    high_score = 1
-    for score in scores:
-        if score > high_score:
-            high_score = score
-    most_deviant = 0
-    for placement in placements:
-        if high_score == heuristic_eval(placement_board):
-            best_placement_metrics = get_metrics(board, placement)
-            for metric,value in best_placement_metrics:
-                if most_deviant < placements_metrics_devs[best_placement_metrics][metric]:
-                    most_deviant = placements_metrics_devs[best_placement_metrics][metric]
-            for metric,value in best_placement_metrics:
-                if most_deviant == placements_metrics_devs[best_placement_metrics][metric]:
-                    most_deviant_name = metric
-            return (placement,most_deviant_name)
+
+    max_score = max(scores)
+    max_index = scores.index(max_score)
+    best_place = placements[max_index]
+    best_metrics = get_metrics(board,best_place,raw=True)
+    for i in range(len(placements_devs)):
+        if placements_stds[i] == 0:
+            placements_devs[i] = 0
+        else: placements_devs[i] = (best_metrics[i] - placements_means[i]) / placements_stds[i]
+    max_dev = max(placements_devs)
+    max_index = placements_devs.index(max_dev)
+    return max_index, placements_devs[i]
 
 def heuristic_eval(placement, board, vals=False):
     placement_metrics = get_metrics(board, placement)
